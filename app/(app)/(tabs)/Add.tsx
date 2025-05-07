@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
-  TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
   Alert,
   Modal,
+  ActivityIndicator,
+  TouchableWithoutFeedback
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/app/styles/theme";
@@ -22,12 +23,14 @@ import { debounce } from "lodash";
 import * as ImagePicker from "expo-image-picker";
 import fetchSuggestions from "../features/fetchSuggestions";
 import * as Location from "expo-location";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/context/authContext";
 import MapView, { Marker } from "react-native-maps";
 import { uploadImages } from "../features/uploadImages";
 import { ID } from "appwrite";
-import { account, databases } from "@/lib/appwriteConfig";
+import { databases } from "@/lib/appwriteConfig";
+import NoticeModal from "@/app/components/NoticeModal";
+import SubmittingModal from "@/app/components/SubmittingModal";
 
 const { width } = Dimensions.get("window");
 
@@ -40,12 +43,11 @@ const Add = () => {
   const [inputLayout, setInputLayout] = useState({ y: 0, height: 0 });
   const [images, setImages] = useState([]);
   const [maxUploaded, setMaxUploaded] = useState(false);
-  const [pinnedCoordinate, setPinnedCoordinate] = useState([]);
-  const [rating, setRating] = useState(null); // Track rating value
-  const [showRatingModal, setShowRatingModal] = useState(false); // Control rating input modal
-  const [ratingInput, setRatingInput] = useState(""); // Temporary input for rating
+  const [rating, setRating] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingInput, setRatingInput] = useState("");
   const router = useRouter();
-  const [username, setUsername] = useState("fetching..");
+  const [username, setUsername] = useState("fetching...");
   const { user } = useAuth();
   const [maxMoodSet, setMaxMoodSet] = useState(false);
   const [title, setTitle] = useState("");
@@ -53,19 +55,17 @@ const Add = () => {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
+  const [postingLoader, setPostingLoader] = useState(false);
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
 
-
-
+  // Set username when user changes
   useEffect(() => {
-    setUsername(user.name);
-  }, []);
+    if (user?.name) {
+      setUsername(user.name);
+    }
+  }, [user]);
 
-  const handleMapPress = async (e) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setMarker({ latitude, longitude });
-    console.log(marker.latitude, marker.longitude)
-  };
-
+  // Fetch current location
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -84,56 +84,91 @@ const Add = () => {
     })();
   }, []);
 
-  useEffect(()=>{
-    console.log(images)
-  }, [images])
+  // Fetch location suggestions with debounce
+  useEffect(() => {
+    if (locationText.trim()) {
+      const debouncedFetch = debounce(async (text) => {
+        const suggestions = await fetchSuggestions(text);
+        setLocationSuggestions(suggestions || []);
+      }, 300);
+      debouncedFetch(locationText);
+      return () => debouncedFetch.cancel();
+    } else {
+      setLocationSuggestions([]);
+    }
+  }, [locationText]);
 
-  const handlePostReview = async () => {
-    
-    try{
-      const imgUrls = await uploadImages(images);
-      console.log("Image urls array", imgUrls)
+  // Handle map press to set marker
+  const handleMapPress = useCallback((e) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate;
+    setMarker((prev) => {
+      if (prev?.latitude === latitude && prev?.longitude === longitude) {
+        return prev;
+      }
+      return { latitude , longitude };
+    });
+  }, []);
 
-      if (imgUrls.length === 0){
+  // Handle post review
+  const handlePostReview = useCallback(
+    debounce(async () => {
+      if (!title || !description || !moods.length || !rating || !marker) {
+        Alert.alert(
+          "Error",
+          "Please fill all required fields (title, description, mood, rating, location)."
+        );
         return;
       }
 
-      const data = {
-        username,
-        title,
-        description,
-        mood:moods,
-        like_counts: 0,
-        saved_details: [],
-        postId: ID.unique(),
-        rating: parseFloat(rating),
-        img_urls: imgUrls,
-        location: [toString(marker.latitude),toString(marker.longitude)],
-      };
+      setPostingLoader(true);
+      try {
+        const imgUrls = await uploadImages(images);
+        if (imgUrls.length === 0) {
+          Alert.alert("Error", "No images uploaded.");
+          return;
+        }
 
-      console.log(data)
+        const data = {
+          username,
+          title,
+          description,
+          mood: moods,
+          like_counts: 0,
+          saved_details: [],
+          postId: ID.unique(),
+          rating: parseFloat(rating),
+          img_urls: imgUrls,
+          location: marker
+            ? [String(marker.latitude), String(marker.longitude)]
+            : [],
+        };
 
-      const uploadedData = await databases.createDocument(
-        process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
-        process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_POSTS_COLLECTION_ID,
-        ID.unique(),
-        data
-      );
+        const uploadedData = await databases.createDocument(
+          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
+          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_POSTS_COLLECTION_ID,
+          ID.unique(),
+          data
+        );
+        setIsSuccessModalVisible(true);
+      } catch (error) {
+        console.error("Error posting data:", error);
+        Alert.alert("Error", "Failed to post review. Please try again.");
+      } finally {
+        setPostingLoader(false);
+      }
+    }, 300),
+    [username, title, description, moods, rating, images, marker]
+  );
 
-      console.log("This is uploaded", uploadedData);
-      return
+  // Close success modal
+  const closeSuccessModal = useCallback(() => {
+    setIsSuccessModalVisible(false);
+  }, []);
 
-    } catch(error){
-      console.error("Error happened while posting data")
-      console.error(error)
-    }
-    
-  };
-
-  const clickPicture = async () => {
+  // Image picking functions
+  const clickPicture = useCallback(async () => {
     if (images.length >= 3) {
       setMaxUploaded(true);
-      console.log("Max uploaded");
       return;
     }
 
@@ -144,27 +179,26 @@ const Add = () => {
     }
 
     const clickedPicture = await ImagePicker.launchCameraAsync({
-      mediaTypes: "images",
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!clickedPicture.canceled) {
       const imageUri = clickedPicture.assets[0].uri;
-      if (images.length < 3) {
-        setImages((prev) => [...prev, { uri: imageUri }]);
-        setMaxUploaded(false);
-      }
+      setImages((prev) => [...prev, { uri: imageUri }]);
+      setMaxUploaded(false);
     }
-  };
+  }, [images]);
 
-  const pickImages = async () => {
+  const pickImages = useCallback(async () => {
     if (images.length >= 3) {
       setMaxUploaded(true);
       return;
     }
-    let pickedImages = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
+
+    const pickedImages = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.7,
     });
@@ -173,12 +207,16 @@ const Add = () => {
       const newImages = pickedImages.assets;
       const remainingSlots = 3 - images.length;
       if (remainingSlots > 0) {
-        const imagesToAdd = newImages.slice(0, remainingSlots);
-        setImages([...images, ...imagesToAdd]);
-        setMaxUploaded(false);
+        setImages((prev) => [...prev, ...newImages.slice(0, remainingSlots)]);
+        setMaxUploaded(newImages.length > remainingSlots);
       }
     }
-  };
+  }, [images]);
+
+  const removeSelectedImage = useCallback((index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setMaxUploaded(false);
+  }, []);
 
   const renderImageItem = ({ item, index }) => (
     <View style={styles.imageContainer}>
@@ -193,63 +231,41 @@ const Add = () => {
     </View>
   );
 
-  const removeSelectedImage = (index) => {
-    const updatedImages = images.filter((_, i) => i !== index);
-    setImages(updatedImages);
-  };
+  const removeSelectedMood = useCallback((index) => {
+    setMoods((prev) => prev.filter((_, i) => i !== index));
+    setMaxMoodSet(false);
+  }, []);
 
-  const removeSelectedMood = (index) => {
-    const updatedMoods = moods.filter((_, i) => i !== index);
-    setMoods(updatedMoods);
-  };
-
-  useEffect(() => {
-    if (locationText.trim()) {
-      const debouncedFetch = debounce(async (text) => {
-        const suggestions = await fetchSuggestions(text);
-        setLocationSuggestions(suggestions || []);
-      }, 300);
-      debouncedFetch(locationText);
-      return () => debouncedFetch.cancel();
-    } else {
-      setLocationSuggestions([]);
-    }
-  }, [locationText]);
-
-  const handleAddMood = () => {
+  const handleAddMood = useCallback(() => {
     if (moods.length >= 3) {
       setMaxMoodSet(true);
       return;
     }
 
     if (moodText.trim()) {
-      setMoods([...moods, moodText.trim()]);
-      setMoodText([]);
-      setMaxMoodSet((prev) => prev + 1);
+      setMoods((prev) => [...prev, moodText.trim()]);
+      setMoodText("");
       setMaxMoodSet(false);
-      {}
     }
-  };
+  }, [moodText, moods]);
 
-  const handleLocationSelect = (location) => {
+  const handleLocationSelect = useCallback((location) => {
     setLocationText(location.label);
     setSelectedLocation(location);
     setLocationSuggestions([]);
-  };
+  }, []);
 
-  const dismissKeyboardAndSuggestions = () => {
+  const dismissKeyboardAndSuggestions = useCallback(() => {
     Keyboard.dismiss();
     setLocationSuggestions([]);
-  };
+  }, []);
 
-  // Handle rating button press
-  const handleRatePress = () => {
+  const handleRatePress = useCallback(() => {
     setShowRatingModal(true);
     setRatingInput("");
-  };
+  }, []);
 
-  // Validate and submit rating
-  const handleRatingSubmit = () => {
+  const handleRatingSubmit = useCallback(() => {
     const num = parseFloat(ratingInput);
     if (!isNaN(num) && num >= 1 && num <= 5 && Number(num.toFixed(1)) === num) {
       setRating(num);
@@ -260,246 +276,260 @@ const Add = () => {
         "Please enter a number between 1 and 5 with one decimal place (e.g., 4.5)."
       );
     }
-  };
+  }, [ratingInput]);
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
-      <View style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          behavior="padding"
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+    <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
         >
-          <ScrollView
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={styles.header}>Create Post</Text>
-            <View style={styles.userInfo}>
-              <Image
-                source={{ uri: "https://picsum.photos/200" }}
-                style={styles.avatar}
+          {/* Wrap inputs in TouchableWithoutFeedback for keyboard dismissal */}
+          <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
+            <View>
+              <Text style={styles.header}>Create Post</Text>
+              <View style={styles.userInfo}>
+                <Image
+                  source={{ uri: "https://picsum.photos/200" }}
+                  style={styles.avatar}
+                />
+                <Text style={styles.username}>{username}</Text>
+              </View>
+              <Text style={styles.subtext}>Share your feelings</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a catchy title to your post"
+                placeholderTextColor="#999"
+                value={title}
+                onChangeText={setTitle}
               />
-              <Text style={styles.username}>{username}</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Describe your feelings...."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={4}
+                value={description}
+                onChangeText={setDescription}
+              />
             </View>
-            <Text style={styles.subtext}>Share your feelings</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Add a catchy title to your post"
-              placeholderTextColor="#999"
-              value={title}
-              onChangeText={(newTitle) => setTitle(newTitle)}
-            />
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Describe your feelings...."
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              value={description}
-              onChangeText={(newDesc) => setDescription(newDesc)}
-            />
-            <TouchableOpacity
-              style={styles.rateButton}
-              onPress={handleRatePress}
-            >
-              <Text style={styles.rateText}>
-                {rating ? `⭐ ${rating.toFixed(1)} rated` : "⭐ Rate it"}
-              </Text>
+          </TouchableWithoutFeedback>
+          <TouchableOpacity style={styles.rateButton} onPress={handleRatePress}>
+            <Text style={styles.rateText}>
+              {rating ? `⭐ ${rating.toFixed(1)} rated` : "⭐ Rate it"}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.iconRow}>
+            <TouchableOpacity style={styles.iconButton} onPress={clickPicture}>
+              <Ionicons name="camera" size={24} color="#000" />
+              <Text>Camera</Text>
             </TouchableOpacity>
-            <View style={styles.iconRow}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={clickPicture}
-              >
-                <Ionicons name="camera" size={24} color="#000" />
-                <Text>Camera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton} onPress={pickImages}>
-                <Ionicons name="images" size={24} color="#000" />
-                <Text>Gallery</Text>
-              </TouchableOpacity>
-            </View>
-            {maxUploaded && (
-              <Text style={styles.warningText}>
-                You can only select up to 3 images. Please remove one to add a
-                new image.
-              </Text>
-            )}
-            {images.length > 0 && (
-              <FlatList
-                data={images}
-                renderItem={renderImageItem}
-                keyExtractor={(item, index) =>
-                  item.id?.toString() || index.toString()
-                }
-                horizontal
-                scrollEnabled={true}
-                showsHorizontalScrollIndicator={false}
-                style={{ flex: 1, marginBottom: 10, width: "100%" }}
-                contentContainerStyle={{
-                  paddingVertical: 5,
-                  paddingHorizontal: 10,
-                }}
-              />
-            )}
-            <View
-              style={styles.locationInput}
-              onLayout={(event) => {
-                const { y, height } = event.nativeEvent.layout;
-                setInputLayout({ y, height });
+            <TouchableOpacity style={styles.iconButton} onPress={pickImages}>
+              <Ionicons name="images" size={24} color="#000" />
+              <Text>Gallery</Text>
+            </TouchableOpacity>
+          </View>
+          {maxUploaded && (
+            <Text style={styles.warningText}>
+              You can only select up to 3 images. Please remove one to add a new
+              image.
+            </Text>
+          )}
+          {images.length > 0 && (
+            <FlatList
+              data={images}
+              renderItem={renderImageItem}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              scrollEnabled
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 10, width: "100%" }}
+              contentContainerStyle={{
+                paddingVertical: 5,
+                paddingHorizontal: 10,
               }}
-            >
+              nestedScrollEnabled={true} // Enable nested scrolling
+            />
+          )}
+          <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
+            <View style={styles.locationInput}>
               <Ionicons name="location-outline" size={20} color="#666" />
               <TextInput
                 style={styles.locationTextInput}
                 placeholder="Tag Location"
                 placeholderTextColor="#999"
-                onPress={() => setShowLocationPicker(true)}
+                value={locationText}
+                onChangeText={setLocationText}
+                onFocus={() => setShowLocationPicker(true)}
               />
-              {marker && (<Text>{marker.latitude} {marker.longitude}</Text>)}
+              {marker && (
+                <Text>
+                  {marker.latitude} {marker.longitude}
+                </Text>
+              )}
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Add your mood here"
-              placeholderTextColor="#999"
-              value={moodText}
-              onChangeText={(mText) => setMoodText(mText)}
-              onSubmitEditing={handleAddMood}
-              returnKeyType="done"
-            />
-            <View style={styles.moodRow}>
-              {moods.map((mood, index) => (
-                <TouchableOpacity key={index} style={styles.moodTag}>
-                  <Text style={styles.moodText}>{mood}</Text>
-                  <Ionicons
-                    name="close-circle-outline"
-                    style={styles.deleteMoodButton}
-                    size={15}
-                    color={COLORS.danger}
-                    onPress={() => removeSelectedMood(index)}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            {maxMoodSet ? (
-              <Text style={{ color: "red", bottom: 5 }}>
-                Mood limit up to 3
-              </Text>
-            ) : null}
-            <TouchableOpacity
-              style={styles.postButton}
-              onPress={handlePostReview}
-            >
-              <Text style={styles.postButtonText}>Post Review</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        {/* Location Picker */}
-
-        <Modal
-          visible={showLocationPicker}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowLocationPicker(false)}
-        >
-          <MapView style={{ flex: 1 }} region={region} onPress={handleMapPress}>
-            {region && (
-              <Marker
-                coordinate={{
-                  latitude: region.latitude,
-                  longitude: region.longitude,
-                }}
-                title="You"
-                pinColor="#3C64FE"
-              >
-              </Marker>
-            )}
-            {marker && (
-              <Marker
-                coordinate={{
-                  latitude: marker.latitude,
-                  longitude: marker.longitude,
-                }}
-                title={`${marker.latitude} ${marker.longitude}`}
-              />
-            )}
-          </MapView>
-          <View style={styles.modalButtonRow}>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowLocationPicker(false)}
-            >
-              <Text
-                style={[styles.modalButtonText, styles.modalButtonTextCancel]}
-              >
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.submitButton]}
-              onPress={() => setShowLocationPicker(false)}
-            >
-              <Text style={styles.modalButtonText}>Use This Location</Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-
-        {/* Rating Input Modal */}
-        <Modal
-          visible={showRatingModal}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowRatingModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Enter Rating (1.0 - 5.0)</Text>
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
+            <View>
               <TextInput
-                style={styles.modalInput}
-                placeholder="e.g., 4.5"
+                style={styles.input}
+                placeholder="Add your mood here"
                 placeholderTextColor="#999"
-                value={ratingInput}
-                onChangeText={setRatingInput}
-                keyboardType="decimal-pad"
-                autoFocus={true}
+                value={moodText}
+                onChangeText={setMoodText}
+                onSubmitEditing={handleAddMood}
+                returnKeyType="done"
               />
-              <View style={styles.modalButtonRow}>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={() => setShowRatingModal(false)}
-                >
-                  <Text
-                    style={[
-                      styles.modalButtonText,
-                      styles.modalButtonTextCancel,
-                    ]}
-                  >
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.submitButton]}
-                  onPress={handleRatingSubmit}
-                >
-                  <Text style={styles.modalButtonText}>Submit</Text>
-                </TouchableOpacity>
+              <View style={styles.moodRow}>
+                {moods.map((mood, index) => (
+                  <TouchableOpacity key={index} style={styles.moodTag}>
+                    <Text style={styles.moodText}>{mood}</Text>
+                    <Ionicons
+                      name="close-circle-outline"
+                      style={styles.deleteMoodButton}
+                      size={15}
+                      color={COLORS.danger}
+                      onPress={() => removeSelectedMood(index)}
+                    />
+                  </TouchableOpacity>
+                ))}
               </View>
+              {maxMoodSet && (
+                <Text style={{ color: "red", marginBottom: 5 }}>
+                  Mood limit up to 3
+                </Text>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+          <TouchableOpacity
+            style={styles.postButton}
+            onPress={handlePostReview}
+          >
+            <Text style={styles.postButtonText}>Post Review</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Location Picker Modal */}
+      <Modal
+        visible={showLocationPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <MapView style={{ flex: 1 }} region={region} onPress={handleMapPress}>
+          {region && (
+            <Marker
+              coordinate={{
+                latitude: region.latitude,
+                longitude: region.longitude,
+              }}
+              title="You"
+              pinColor="#3C64FE"
+            />
+          )}
+          {marker && (
+            <Marker
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}
+              title={`${marker.latitude.toFixed(4)} ${marker.longitude.toFixed(
+                4
+              )}`}
+            />
+          )}
+        </MapView>
+        <View style={styles.modalButtonRow}>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => setShowLocationPicker(false)}
+          >
+            <Text
+              style={[styles.modalButtonText, styles.modalButtonTextCancel]}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.submitButton]}
+            onPress={() => setShowLocationPicker(false)}
+          >
+            <Text style={styles.modalButtonText}>Use This Location</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Rating Input Modal */}
+      <Modal
+        visible={showRatingModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowRatingModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Enter Rating (1.0 - 5.0)</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g., 4.5"
+              placeholderTextColor="#999"
+              value={ratingInput}
+              onChangeText={setRatingInput}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setShowRatingModal(false)}
+              >
+                <Text
+                  style={[styles.modalButtonText, styles.modalButtonTextCancel]}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.submitButton]}
+                onPress={handleRatingSubmit}
+              >
+                <Text style={styles.modalButtonText}>Submit</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
-      </View>
-    </TouchableWithoutFeedback>
+        </View>
+      </Modal>
+
+      {/* Loading Overlay Modal */}
+     {postingLoader && (
+      <SubmittingModal visible={postingLoader}/>
+     )}
+
+      {/* Success Modal */}
+      <NoticeModal
+        visible={isSuccessModalVisible}
+        onClose={closeSuccessModal}
+      />
+    </View>
   );
 };
 
 export default Add;
 
+// Styles (unchanged except for minor tweaks)
 const styles = StyleSheet.create({
   container: {
     padding: 20,
     backgroundColor: "#fff",
+    paddingBottom: 100, // Extra padding to ensure content is scrollable
   },
   header: {
     fontSize: 22,
@@ -575,21 +605,6 @@ const styles = StyleSheet.create({
     height: 40,
     color: "#000",
   },
-  suggestionsList: {
-    maxHeight: 150,
-    marginTop: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    borderColor: "#ddd",
-    borderWidth: 1,
-  },
-  suggestionItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  suggestionText: {
-    color: "#333",
-  },
   moodRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -648,7 +663,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 20,
   },
-  // Modal styles for rating input
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
