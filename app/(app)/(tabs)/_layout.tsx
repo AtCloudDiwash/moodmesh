@@ -9,16 +9,24 @@ export default function TabsLayout(){
           headerShown: false,
           tabBarActiveTintColor: COLORS.primary,
           tabBarInactiveTintColor: COLORS.iconColor,
-          tabBarStyle:{
-            height: 70
-          }
+          tabBarStyle: {
+            height: 70,
+          },
         }}
       >
         <Tabs.Screen
           name="Feed"
           options={{
             tabBarIcon: ({ color }) => (
-              <FontAwesome name="home" size={24} color={color}/>
+              <FontAwesome name="home" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="Explore"
+          options={{
+            tabBarIcon: ({ color }) => (
+              <FontAwesome name="compass" size={24} color={color} />
             ),
           }}
         />
@@ -46,15 +54,6 @@ export default function TabsLayout(){
             ),
           }}
         />
-
-        <Tabs.Screen
-        name="Explore"
-        options={{
-            tabBarIcon: ({ color }) => (
-              <FontAwesome name="compass" size={24} color={color} />
-            ),
-          }}
-          />
       </Tabs>
     );
 }

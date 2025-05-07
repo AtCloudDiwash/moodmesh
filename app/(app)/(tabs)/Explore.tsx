@@ -1,111 +1,109 @@
 import React, { useState, useEffect } from "react";
+import { Text, ActivityIndicator, View } from "react-native";
+import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
-import { View, StyleSheet, Text } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import { COLORS } from "@/app/styles/theme";
+import mapStyle from "@/app/styles/mapThemeStyles.json";
+
 
 export default function Explore() {
-  const [location, setLocation] = useState(null);
-  const [initialRegion, setInitialRegion] = useState(null); // Start with null to ensure proper rendering
-  const [marker, setMarker] = useState(null);
-  const [address, setAddress] = useState("");
-  const [defaultMarker, setDefaultMarker] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
+  const [location, setLocation] = useState({
+    latitude: 27.7172,
+    longitude: 85.324,
   });
+  const [marker, setMarker] = useState({
+    latitude: 27.7172,
+    longitude: 85.324,
+  });
+  const [errMsg, setErrMsg] = useState("");
 
-  const getCurrentLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      console.error("Permission to access location was denied");
-      return;
-    }
-
-    let loc = await Location.getCurrentPositionAsync({});
-    setLocation(loc);
-
-    setInitialRegion({
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
-
-    setDefaultMarker({
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-    });
+const nearbyLocations = [
+  { name: "Kathmandu Durbar Square", latitude: 27.7046, longitude: 85.3076 },
+  { name: "Patan Durbar Square", latitude: 27.6731, longitude: 85.325 },
+  { name: "Boudhanath Stupa", latitude: 27.7215, longitude: 85.3616 },
+  { name: "Swayambhunath Stupa", latitude: 27.7149, longitude: 85.2901 },
+  { name: "Kirtipur", latitude: 27.6674, longitude: 85.2799 },
+  { name: "Thamel", latitude: 27.7154, longitude: 85.3114 },
+  { name: "Balkhu", latitude: 27.6888, longitude: 85.3203 },
+  { name: "Garden of Dreams", latitude: 27.7124, longitude: 85.3167 },
+  { name: "Tribhuvan University", latitude: 27.6675, longitude: 85.2775 },
+  { name: "Pashupatinath Temple", latitude: 27.7104, longitude: 85.3489 },
+  { name: "Bhaktapur Durbar Square", latitude: 27.671, longitude: 85.4298 },
+  { name: "Nagarkot Viewpoint", latitude: 27.7153, longitude: 85.525 },
+  {
+    name: "Tribhuvan International Airport",
+    latitude: 27.6995,
+    longitude: 85.3591,
+  },
+  { name: "Chandragiri Hills", latitude: 27.6606, longitude: 85.2643 },
+  { name: "Jawalakhel", latitude: 27.6727, longitude: 85.317 },
+];
+  const handleMapPress = (e) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate;
+    setMarker({ latitude, longitude });
   };
 
   useEffect(() => {
-    getCurrentLocation();
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setErrMsg("Permission denied, using fallback location.");
+          return;
+        }
+
+        let currentLocation = await Location.getCurrentPositionAsync();
+        setLocation({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        });
+      } catch (error) {
+        setErrMsg("Error getting location, using fallback");
+      }
+    })();
   }, []);
 
-  // Log values after the state has been set (second render)
-  useEffect(() => {
-    console.log("Initial Region:", initialRegion);
-    console.log("Default Marker:", defaultMarker);
-  }, [initialRegion, defaultMarker]);
-
-  const handleMapPress = async (e) => {
-    const coords = e.nativeEvent.coordinate;
-    setMarker(coords);
-    console.log("I touched",marker)
-    // Reverse Geocoding with Nominatim
-    try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&addressdetails=1`,
-              {
-                headers: {
-                  "User-Agent":
-                    "com.anonymous.MoodMesh/1.0 (mailto:kuskusmiyaspace321@gmail.com)", 
-                },
-              }
-            );
-      const data = await response.json();
-      setAddress(data.display_name);
-    } catch (err) {
-      console.error("Reverse geocoding failed", err);
-    }
-  };
-
-
-  if (!initialRegion) {
-    return <Text>Loading map...</Text>;
+  if (!location) {
+    return <ActivityIndicator size="large" />;
   }
 
+  const camera = {
+    center: {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    },
+    zoom: 15,
+    pitch: 0,
+    heading: 0,
+    altitude: 1,
+  };
+
   return (
-    <View style={styles.container}>
-      <MapView style={styles.map} initialRegion={initialRegion} onLongPress={handleMapPress}>
-        <Marker
-          coordinate={defaultMarker}
-          title="My Marker"
-          description="This is a marker example"
-        />
+    <View style={{ flex: 1 }}>
+      {errMsg ? <Text>{errMsg}</Text> : null}
 
-        {marker && (
+      <MapView
+        style={{ flex: 1 }}
+        initialCamera={camera}
+        showsUserLocation={true}
+        followsUserLocation={true}
+        onPress={handleMapPress} // Handle map press to set marker
+        customMapStyle={mapStyle}
+      >
+        {nearbyLocations.map((location, index) => (
           <Marker
-            coordinate={marker}
-            title={address}
-            description="This is where you tapped!"
-          />
-        )}
+            key={index}
+            coordinate={{
+              latitude: location.latitude,
+              longitude: location.longitude,
+            }}
+            title={location.name}
+            pinColor={COLORS.secondary}
+          >
+  
+          </Marker>
+        ))}
       </MapView>
-
-      <Text style={styles.address} >{address || "Tap map to set location"}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  address: {
-    position: "absolute",
-    bottom: 40,
-    backgroundColor: "white",
-    padding: 10,
-    marginHorizontal: 20,
-    borderRadius: 8,
-    fontSize: 14,
-  },
-});

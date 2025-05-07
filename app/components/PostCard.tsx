@@ -1,10 +1,11 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform} from "react-native";
+import React from "react";
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/app/styles/theme";
 
-const PostCard = ({ postData}) => {
+const PostCard = ({ postData }) => {
   return (
     <View style={styles.card}>
       {/* User Info */}
@@ -38,7 +39,7 @@ const PostCard = ({ postData}) => {
 
       {/* Tags */}
       <View style={styles.tags}>
-        {postData.tags.map((tag:any, index:any) => (
+        {postData.tags.map((tag, index) => (
           <Text key={index} style={styles.tag}>
             {tag}
           </Text>
@@ -69,7 +70,7 @@ const PostCard = ({ postData}) => {
   );
 };
 
-export default PostCard;
+export default React.memo(PostCard);
 
 const styles = StyleSheet.create({
   card: {
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
-    width: "90%"
+    width: "90%",
   },
   userInfo: {
     flexDirection: "row",
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   },
   tags: {
     flexDirection: "row",
-    gap: 10,
+    flexWrap: "wrap",
     marginBottom: 10,
   },
   tag: {
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   engagementItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    marginRight: 10,
   },
   engagementText: {
     marginLeft: 4,

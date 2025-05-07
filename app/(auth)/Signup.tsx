@@ -13,7 +13,7 @@ import { COLORS } from "../styles/theme";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ID } from "appwrite";
-import { account } from "@/lib/appwriteConfig";
+import { account, databases } from "@/lib/appwriteConfig";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -42,6 +42,28 @@ export default function SignupScreen() {
         username
       )
 
+      try{
+        console.log(username)
+          const userProfileRegister = await databases.createDocument(
+            process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
+            process.env
+              .EXPO_PUBLIC_APPWRITE_MOODMESH_USER_PROFILE_COLLECTION_ID,
+            ID.unique(),
+            {
+              username,
+              total_likes: 0,
+              total_mesh_points: 0,
+              saved_posts: [],
+              avatar_url: [],
+            }
+          );
+
+          console.log(userProfileRegister)
+
+          router.push("/Login")
+      } catch(error){
+        console.error(error)
+      }
       setSuccess("Account created successfully")
 
     } catch(err){
