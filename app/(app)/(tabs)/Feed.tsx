@@ -1,49 +1,91 @@
-import { Text, View, FlatList, SafeAreaView, StyleSheet, StatusBar } from "react-native";
+import React from 'react';
+import {
+  Text,
+  View,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  StatusBar,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
 import { Stack } from "expo-router";
-import PostCard from "@/app/components//PostCard";
+import PostCard from "@/app/components/PostCard";
 import { COLORS } from "../../styles/theme";
+import { useState, useEffect } from "react";
+import useUserPostIds from '../features/getUserPostId';
 
 export default function FeedScreen() {
-  const posts = [
-    {
-      id: "1",
-      user: {
-        name: "User 1",
-        avatarUrl: "https://picsum.photos/200/300",
-        feeling: "Feeling happy, excited",
-      },
-      image: {
-        url: "https://picsum.photos/200/300",
-        location: "Himalayan Java, Jawalakhel",
-      },
-      caption: "Every bite was a mood",
-      tags: ["#Hungry 😋", "#Delicious 😋", "#Heaven ☁️"],
-      engagement: {
-        likes: 1200,
-        comments: 600,
-        rating: 4.6,
-      },
-    },
-    {
-      id: "2",
-      user: {
-        name: "User 2",
-        avatarUrl: "https://picsum.photos/200/301",
-        feeling: "Feeling relaxed",
-      },
-      image: {
-        url: "https://picsum.photos/200/301",
-        location: "Cafe XYZ, Kathmandu",
-      },
-      caption: "Chasing good vibes",
-      tags: ["#Chill 🧊", "#Coffee ☕"],
-      engagement: {
-        likes: 800,
-        comments: 200,
-        rating: 4.2,
-      },
-    },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const limit = 10;
+  const { postIds, loadingUserPost, errorLoadingPost } = useUserPostIds();
+
+  //for development only
+
+  // const fetchPosts = async (pageToFetch = 1, refreshing = false) => {
+  //   try {
+  //     const res = await fetch(
+  //       `https://picsum.photos/v2/list?page=${pageToFetch}&limit=${limit}`
+  //     );
+  //     const data = await res.json();
+  //     const user = await account.get();
+  //     console.log(user.name)
+
+  //     const formattedPosts = data.map((img, i) => ({
+  //       id: `${img.id}-${Date.now()}`,
+  //       user: {
+  //         name: `User ${img.author}`,
+  //         avatarUrl: `https://i.pravatar.cc/150?img=${(i + pageToFetch) % 70}`,
+  //         feeling: "Feeling great!",
+  //       },
+  //       image: {
+  //         url: img.download_url,
+  //         location: "Random Location 🌍",
+  //       },
+  //       caption: "Random vibes with random images",
+  //       tags: ["#vibe", "#random", "#image"],
+  //       engagement: {
+  //         likes: Math.floor(Math.random() * 2000),
+  //         comments: Math.floor(Math.random() * 300),
+  //         rating: (Math.random() * 5).toFixed(1),
+  //       },
+  //     }));
+
+  //     if (refreshing) {
+  //       setPosts(formattedPosts);
+  //     } else {
+  //       setPosts((prev) => [...prev, ...formattedPosts]);
+  //     }
+
+  //     setHasMore(data.length === limit);
+  //   } catch (err) {
+  //     console.error("Fetch error:", err);
+  //   }
+  // };
+
+  // const loadMorePosts = async () => {
+  //   if (loading || !hasMore) return;
+  //   setLoading(true);
+  //   const nextPage = page + 1;
+  //   await fetchPosts(nextPage);
+  //   setPage(nextPage);
+  //   setLoading(false);
+  // };
+
+  // const onRefresh = async () => {
+  //   setRefreshing(true);
+  //   await fetchPosts(Math.floor(Math.random() * 40), true);
+  //   setPage(1);
+  //   setRefreshing(false);
+  // };
+
+  // useEffect(() => {
+  //   fetchPosts();
+  // }, []);
 
   return (
     <>
@@ -51,15 +93,19 @@ export default function FeedScreen() {
       <StatusBar barStyle="dark-content"></StatusBar>
       <SafeAreaView style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>MoodMesh</Text>
+          <Text style={styles.title}>moodmesh</Text>
         </View>
 
         <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PostCard postData={item} />}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          style={styles.flatList} // Ensures FlatList fills the screen
+          data={postIds}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => <PostCard postData={item}/>}
+          style={styles.flatList}
+          // onEndReached={loadMorePosts}
+          // onEndReachedThreshold={0.5}
+          // refreshControl={
+          //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          // }
         />
       </SafeAreaView>
     </>
@@ -73,21 +119,22 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     alignItems: "center",
   },
-  titleContainer:{
+  titleContainer: {
     marginTop: 10,
     width: "100%",
     alignItems: "flex-start",
     paddingLeft: 15,
-    paddingTop: 15, 
+    paddingTop: 5,
+    paddingBottom: 15,
+    elevation: 4,
   },
-  title:{
+  title: {
     fontSize: 24,
     fontWeight: "bold",
     color: COLORS.primary,
   },
   flatList: {
     width: "100%",
-    marginTop: 1
+    marginTop: 1,
   },
-  
 });
