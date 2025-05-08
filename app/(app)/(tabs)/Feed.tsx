@@ -1,49 +1,39 @@
-import { Text, View, FlatList, SafeAreaView, StyleSheet, StatusBar } from "react-native";
+import React from "react";
+import {
+  Text,
+  View,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  StatusBar,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
 import { Stack } from "expo-router";
-import PostCard from "@/app/components//PostCard";
+import PostCard from "@/app/components/PostCard";
 import { COLORS } from "../../styles/theme";
+import { useState, useEffect } from "react";
+import useUserPostIds from "../features/getUserPostId";
+import { useCallback } from "react";
 
 export default function FeedScreen() {
-  const posts = [
-    {
-      id: "1",
-      user: {
-        name: "User 1",
-        avatarUrl: "https://picsum.photos/200/300",
-        feeling: "Feeling happy, excited",
-      },
-      image: {
-        url: "https://picsum.photos/200/300",
-        location: "Himalayan Java, Jawalakhel",
-      },
-      caption: "Every bite was a mood",
-      tags: ["#Hungry 😋", "#Delicious 😋", "#Heaven ☁️"],
-      engagement: {
-        likes: 1200,
-        comments: 600,
-        rating: 4.6,
-      },
-    },
-    {
-      id: "2",
-      user: {
-        name: "User 2",
-        avatarUrl: "https://picsum.photos/200/301",
-        feeling: "Feeling relaxed",
-      },
-      image: {
-        url: "https://picsum.photos/200/301",
-        location: "Cafe XYZ, Kathmandu",
-      },
-      caption: "Chasing good vibes",
-      tags: ["#Chill 🧊", "#Coffee ☕"],
-      engagement: {
-        likes: 800,
-        comments: 200,
-        rating: 4.2,
-      },
-    },
-  ];
+  const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  const limit = 10;
+  const { postIds, loadingUserPost, errorLoadingPost, hasMore } = useUserPostIds(page, limit, refreshKey);
+  const [refreshing, setRefreshing] = useState(false);
+
+
+  const loadMorePosts = useCallback(() => {
+    if (!loadingUserPost && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  }, [loadingUserPost, hasMore]);
+
+const onRefresh = useCallback(() => {
+  setPage(1); 
+  setRefreshKey(Date.now()); 
+}, []);
 
   return (
     <>
@@ -51,15 +41,28 @@ export default function FeedScreen() {
       <StatusBar barStyle="dark-content"></StatusBar>
       <SafeAreaView style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>MoodMesh</Text>
+          <Text style={styles.title}>moodmesh</Text>
         </View>
 
         <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PostCard postData={item} />}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          style={styles.flatList} // Ensures FlatList fills the screen
+          data={postIds}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => <PostCard postData={item} refreshKey = {refreshKey}/>}
+          style={styles.flatList}
+          onEndReached={loadMorePosts}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListFooterComponent={
+            loadingUserPost && hasMore ? (
+              <ActivityIndicator
+                size="large"
+                color={COLORS.primary}
+                style={styles.loader}
+              />
+            ) : null
+          }
         />
       </SafeAreaView>
     </>
@@ -73,21 +76,23 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     alignItems: "center",
   },
-  titleContainer:{
+  titleContainer: {
     marginTop: 10,
     width: "100%",
     alignItems: "flex-start",
     paddingLeft: 15,
-    paddingTop: 15, 
+    paddingTop: 5,
+    paddingBottom: 15,
+    elevation: 4,
   },
-  title:{
+  title: {
     fontSize: 24,
     fontWeight: "bold",
     color: COLORS.primary,
   },
   flatList: {
     width: "100%",
-    marginTop: 1
+    marginTop: 1,
   },
-  
+  loader: { marginVertical: 20 },
 });
