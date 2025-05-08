@@ -9,4 +9,5 @@ export const COLORS = {
   cardBackground: "#FFFFFF",
   accent: "#f1c40f",
   danger: "#dc3545",
+  specialColor: "#ff8000",
 };

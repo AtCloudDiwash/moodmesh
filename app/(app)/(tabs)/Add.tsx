@@ -15,7 +15,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/app/styles/theme";
@@ -31,6 +31,7 @@ import { ID } from "appwrite";
 import { databases } from "@/lib/appwriteConfig";
 import NoticeModal from "@/app/components/NoticeModal";
 import SubmittingModal from "@/app/components/SubmittingModal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -58,14 +59,21 @@ const Add = () => {
   const [postingLoader, setPostingLoader] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
 
-  // Set username when user changes
+  const resetStates = () => {
+      setTitle("");
+      setDescription("");
+      setRating(null);
+      setImages([]);
+      setMarker(null);
+      setMoods([]);
+    };
+
   useEffect(() => {
     if (user?.name) {
       setUsername(user.name);
     }
   }, [user]);
 
-  // Fetch current location
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -105,7 +113,7 @@ const Add = () => {
       if (prev?.latitude === latitude && prev?.longitude === longitude) {
         return prev;
       }
-      return { latitude , longitude };
+      return { latitude, longitude };
     });
   }, []);
 
@@ -150,6 +158,7 @@ const Add = () => {
           data
         );
         setIsSuccessModalVisible(true);
+        resetStates()
       } catch (error) {
         console.error("Error posting data:", error);
         Alert.alert("Error", "Failed to post review. Please try again.");
@@ -179,9 +188,10 @@ const Add = () => {
     }
 
     const clickedPicture = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes:'images',
       aspect: [4, 3],
       quality: 1,
+      allowsEditing: true
     });
 
     if (!clickedPicture.canceled) {
@@ -198,9 +208,10 @@ const Add = () => {
     }
 
     const pickedImages = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       allowsMultipleSelection: true,
       quality: 0.7,
+      aspect: [4, 3],
     });
 
     if (!pickedImages.canceled) {
@@ -279,7 +290,7 @@ const Add = () => {
   }, [ratingInput]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={{ flex: 1 }}
@@ -361,19 +372,16 @@ const Add = () => {
           <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
             <View style={styles.locationInput}>
               <Ionicons name="location-outline" size={20} color="#666" />
-              <TextInput
+              <TouchableOpacity
                 style={styles.locationTextInput}
-                placeholder="Tag Location"
-                placeholderTextColor="#999"
-                value={locationText}
-                onChangeText={setLocationText}
-                onFocus={() => setShowLocationPicker(true)}
-              />
-              {marker && (
+                onPress={() => setShowLocationPicker(true)}
+              >
                 <Text>
-                  {marker.latitude} {marker.longitude}
+                  {marker
+                    ? `${marker.latitude}, ${marker.longitude}`
+                    : "Tag Location"}
                 </Text>
-              )}
+              </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>
           <TouchableWithoutFeedback onPress={dismissKeyboardAndSuggestions}>
@@ -425,16 +433,7 @@ const Add = () => {
         onRequestClose={() => setShowLocationPicker(false)}
       >
         <MapView style={{ flex: 1 }} region={region} onPress={handleMapPress}>
-          {region && (
-            <Marker
-              coordinate={{
-                latitude: region.latitude,
-                longitude: region.longitude,
-              }}
-              title="You"
-              pinColor="#3C64FE"
-            />
-          )}
+
           {marker && (
             <Marker
               coordinate={{
@@ -460,7 +459,7 @@ const Add = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.submitButton]}
-            onPress={() => setShowLocationPicker(false)}
+            onPress={() => { setShowLocationPicker(false)}}
           >
             <Text style={styles.modalButtonText}>Use This Location</Text>
           </TouchableOpacity>
@@ -509,16 +508,14 @@ const Add = () => {
       </Modal>
 
       {/* Loading Overlay Modal */}
-     {postingLoader && (
-      <SubmittingModal visible={postingLoader}/>
-     )}
+      {postingLoader && <SubmittingModal visible={postingLoader} />}
 
       {/* Success Modal */}
       <NoticeModal
         visible={isSuccessModalVisible}
         onClose={closeSuccessModal}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -604,6 +601,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     height: 40,
     color: "#000",
+    justifyContent:"center"
   },
   moodRow: {
     flexDirection: "row",

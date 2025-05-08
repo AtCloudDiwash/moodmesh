@@ -7,12 +7,13 @@ import {
   StyleSheet,
   StatusBar,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Stack } from "expo-router";
 import PostCard from "@/app/components/PostCard";
 import { COLORS } from "../../styles/theme";
 import { useState, useEffect } from "react";
-import { account } from '@/lib/appwriteConfig';
+import useUserPostIds from '../features/getUserPostId';
 
 export default function FeedScreen() {
   const [posts, setPosts] = useState([]);
@@ -21,70 +22,70 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const limit = 10;
-
+  const { postIds, loadingUserPost, errorLoadingPost } = useUserPostIds();
 
   //for development only
 
-  const fetchPosts = async (pageToFetch = 1, refreshing = false) => {
-    try {
-      const res = await fetch(
-        `https://picsum.photos/v2/list?page=${pageToFetch}&limit=${limit}`
-      );
-      const data = await res.json();
-      const user = await account.get();
-      console.log(user.name)
+  // const fetchPosts = async (pageToFetch = 1, refreshing = false) => {
+  //   try {
+  //     const res = await fetch(
+  //       `https://picsum.photos/v2/list?page=${pageToFetch}&limit=${limit}`
+  //     );
+  //     const data = await res.json();
+  //     const user = await account.get();
+  //     console.log(user.name)
 
-      const formattedPosts = data.map((img, i) => ({
-        id: `${img.id}-${Date.now()}`,
-        user: {
-          name: `User ${img.author}`,
-          avatarUrl: `https://i.pravatar.cc/150?img=${(i + pageToFetch) % 70}`,
-          feeling: "Feeling great!",
-        },
-        image: {
-          url: img.download_url,
-          location: "Random Location 🌍",
-        },
-        caption: "Random vibes with random images",
-        tags: ["#vibe", "#random", "#image"],
-        engagement: {
-          likes: Math.floor(Math.random() * 2000),
-          comments: Math.floor(Math.random() * 300),
-          rating: (Math.random() * 5).toFixed(1),
-        },
-      }));
+  //     const formattedPosts = data.map((img, i) => ({
+  //       id: `${img.id}-${Date.now()}`,
+  //       user: {
+  //         name: `User ${img.author}`,
+  //         avatarUrl: `https://i.pravatar.cc/150?img=${(i + pageToFetch) % 70}`,
+  //         feeling: "Feeling great!",
+  //       },
+  //       image: {
+  //         url: img.download_url,
+  //         location: "Random Location 🌍",
+  //       },
+  //       caption: "Random vibes with random images",
+  //       tags: ["#vibe", "#random", "#image"],
+  //       engagement: {
+  //         likes: Math.floor(Math.random() * 2000),
+  //         comments: Math.floor(Math.random() * 300),
+  //         rating: (Math.random() * 5).toFixed(1),
+  //       },
+  //     }));
 
-      if (refreshing) {
-        setPosts(formattedPosts);
-      } else {
-        setPosts((prev) => [...prev, ...formattedPosts]);
-      }
+  //     if (refreshing) {
+  //       setPosts(formattedPosts);
+  //     } else {
+  //       setPosts((prev) => [...prev, ...formattedPosts]);
+  //     }
 
-      setHasMore(data.length === limit);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    }
-  };
+  //     setHasMore(data.length === limit);
+  //   } catch (err) {
+  //     console.error("Fetch error:", err);
+  //   }
+  // };
 
-  const loadMorePosts = async () => {
-    if (loading || !hasMore) return;
-    setLoading(true);
-    const nextPage = page + 1;
-    await fetchPosts(nextPage);
-    setPage(nextPage);
-    setLoading(false);
-  };
+  // const loadMorePosts = async () => {
+  //   if (loading || !hasMore) return;
+  //   setLoading(true);
+  //   const nextPage = page + 1;
+  //   await fetchPosts(nextPage);
+  //   setPage(nextPage);
+  //   setLoading(false);
+  // };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchPosts(Math.floor(Math.random() * 40), true);
-    setPage(1);
-    setRefreshing(false);
-  };
+  // const onRefresh = async () => {
+  //   setRefreshing(true);
+  //   await fetchPosts(Math.floor(Math.random() * 40), true);
+  //   setPage(1);
+  //   setRefreshing(false);
+  // };
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  // useEffect(() => {
+  //   fetchPosts();
+  // }, []);
 
   return (
     <>
@@ -92,20 +93,19 @@ export default function FeedScreen() {
       <StatusBar barStyle="dark-content"></StatusBar>
       <SafeAreaView style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>MoodMesh</Text>
+          <Text style={styles.title}>moodmesh</Text>
         </View>
 
         <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PostCard postData={item} />}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          data={postIds}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => <PostCard postData={item}/>}
           style={styles.flatList}
-          onEndReached={loadMorePosts}
-          onEndReachedThreshold={0.5}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          // onEndReached={loadMorePosts}
+          // onEndReachedThreshold={0.5}
+          // refreshControl={
+          //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          // }
         />
       </SafeAreaView>
     </>

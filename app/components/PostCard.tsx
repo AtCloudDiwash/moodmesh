@@ -1,47 +1,96 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Linking } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/app/styles/theme";
+import { useState } from "react";
+import CustomCarousel from "./CustomCarousel";
+import useUserPost from "../(app)/features/fetchUserPost";
 
-const PostCard = ({ postData }) => {
+const PostCard = ({ postData}) => {
+
+  const {post, imageUrls} = useUserPost(postData)
+
+  const [isCaptionVisible, setIsCaptionVisible] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isFavorites, setIsFavorites] = useState(false);
+
+  const handleLike = () => {
+    setIsLiked((prev) => !prev);
+  };
+
+  const handlSetFavorites = () => {
+    setIsFavorites((prev) => !prev);
+  };
+
+    const openGoogleMaps = (latitude, longitude) => {
+
+      const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      Linking.openURL(url).catch((err) =>
+        console.error("Failed to open map", err)
+      );
+    };
+
+  if (!post) {
+    return <ActivityIndicator size="large" color={COLORS.primary} />;
+  }
+
   return (
     <View style={styles.card}>
       {/* User Info */}
       <View style={styles.userInfo}>
         <Image
-          source={{ uri: postData.user.avatarUrl }}
+          source={{ uri: "https://picsum.photos/id/237/200/300" }}
           style={styles.avatar}
         />
         <View>
-          <Text style={styles.userName}>{postData.user.name}</Text>
-          <Text style={styles.userFeeling}>{postData.user.feeling}</Text>
+          <Text style={styles.userName}>
+            {post.username ? post.username : "Fetching..."}
+          </Text>
+          <Text style={styles.userFeeling}>I was Here</Text>
         </View>
       </View>
 
       {/* Image Section */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: postData.image.url }} style={styles.postImage} />
-        <View style={styles.overlay}>
-          <View style={styles.locationRow}>
-            <Ionicons name="location-sharp" size={16} color="#fff" />
-            <Text style={styles.locationText}>{postData.image.location}</Text>
+        {imageUrls?.length > 0 && (
+          <View style={styles.postImage}>
+            <CustomCarousel images={imageUrls} />
           </View>
-          <TouchableOpacity style={styles.viewMore}>
-            <Text style={styles.viewMoreText}>View More →</Text>
+        )}
+        {isCaptionVisible && (
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.description}>
+              {post.description}
+            </Text>
+          </View>
+        )}
+        <View style={styles.overlay}>
+          <TouchableOpacity style={styles.locationRow} onPress={()=>openGoogleMaps(post.location[0], post.location[1])}>
+            <Ionicons name="location-sharp" size={16} color="#fff" />
+            <Text style={styles.locationText}>Let's Go Explore 🚀</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.viewMore}
+            onPress={() => setIsCaptionVisible((prev) => !prev)}
+          >
+            <Text style={styles.viewMoreText}>
+              {!isCaptionVisible ? "View More" : "Show Less"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Caption */}
-      <Text style={styles.caption}>{postData.caption}</Text>
+
+      <Text style={styles.caption}>This is title</Text>
 
       {/* Tags */}
       <View style={styles.tags}>
-        {postData.tags.map((tag, index) => (
+        {post.mood.map((tag, index) => (
           <Text key={index} style={styles.tag}>
-            {tag}
+           # {tag}
           </Text>
         ))}
       </View>
@@ -49,22 +98,29 @@ const PostCard = ({ postData }) => {
       {/* Engagement Row */}
       <View style={styles.engagementRow}>
         <View style={styles.engagementItem}>
-          <FontAwesome name="thumbs-up" size={18} color="#3366ff" />
-          <Text style={styles.engagementText}>{postData.engagement.likes}</Text>
-        </View>
-        <View style={styles.engagementItem}>
-          <Ionicons name="chatbubble-ellipses" size={18} color="#888" />
-          <Text style={styles.engagementText}>
-            {postData.engagement.comments}
-          </Text>
+          <TouchableOpacity
+            onPress={handleLike}
+            style={{ flexDirection: "row" }}
+          >
+            <FontAwesome
+              name="thumbs-up"
+              size={18}
+              color={!isLiked ? COLORS.iconColor : COLORS.primary}
+            />
+            <Text style={styles.engagementText}>{post.like_counts}</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.engagementItem}>
           <Ionicons name="star" size={18} color="#f1c40f" />
-          <Text style={styles.engagementText}>
-            {postData.engagement.rating}
-          </Text>
+          <Text style={styles.engagementText}>{post.rating}</Text>
         </View>
-        <MaterialIcons name="favorite" size={22} color="#ff8000" />
+        <TouchableOpacity onPress={handlSetFavorites}>
+          <MaterialIcons
+            name="favorite"
+            size={22}
+            color={isFavorites ? COLORS.specialColor : COLORS.iconColor}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -109,9 +165,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
   },
+  descriptionContainer: {
+    position: "absolute",
+    width: "100%",
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#000",
+    height: 290,
+    opacity: 0.8,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+
+  description: {
+    fontSize: 12,
+    color: COLORS.cardBackground,
+    fontWeight: 500,
+    lineHeight: 12*1.2
+  },
   postImage: {
     width: "100%",
-    height: 250,
+    height: 290,
   },
   overlay: {
     position: "absolute",
@@ -124,10 +200,12 @@ const styles = StyleSheet.create({
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#00000080",
+    backgroundColor: "#000",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    opacity: .7,
+    width: "60%",
   },
   locationText: {
     color: "#fff",
@@ -139,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#00000080",
     padding: 6,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   viewMoreText: {
     color: "#fff",
