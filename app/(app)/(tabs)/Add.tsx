@@ -291,7 +291,7 @@ const Add = () => {
   }, [ratingInput]);
 
   return (
-    <View style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1}}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={{ flex: 1 }}
@@ -517,7 +517,7 @@ const Add = () => {
         visible={isSuccessModalVisible}
         onClose={closeSuccessModal}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

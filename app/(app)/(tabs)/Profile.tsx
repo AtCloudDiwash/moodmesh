@@ -1,24 +1,20 @@
-import { View, Text, TouchableOpacity, Button } from 'react-native'
-import React from 'react'
-import { useAuth } from '@/context/authContext'
+import { View, Text, TouchableOpacity, Button } from "react-native";
+import React from "react";
+import { useAuth } from "@/context/authContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-import useAllLocations from '../features/getAllLocation';
+import useAllLocations from "../features/getAllLocation";
 
 const Profile = () => {
+  const { signout, user } = useAuth();
+  const { postedLocations, postedMoods } = useAllLocations();
 
-  const {signout, user} = useAuth()
-const {postedLocations, postedMoods} = useAllLocations()
-console.log("locs",postedLocations)
-
-console.log("moods",postedMoods)
-  const handleSubmit = ()=>{
-    signout()
-  }
+  console.log("moods", postedMoods);
+  const handleSubmit = () => {
+    signout();
+  };
   return (
     <SafeAreaView>
-      <Text>
-        Profile {user.name}
-      </Text>
+      <Text>Profile {user.name}</Text>
       {/* {postedLocations.length > 0 && (
         postedLocations.map((item, index)=>(
           <Text key={index}>{`${item[0]} ${item[1]}`}</Text>
@@ -29,6 +25,6 @@ console.log("moods",postedMoods)
       </TouchableOpacity>
     </SafeAreaView>
   );
-}
+};
 
-export default Profile
+export default Profile;

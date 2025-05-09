@@ -35,7 +35,6 @@ const uploadImages = async (assets: ImagePicker.ImagePickerAsset[]) => {
       }
 
       const resJson = await result.json();
-      console.log("Upload success:", resJson);
       uploaded.push(resJson.$id);
     } catch (err) {
       console.error("Upload failed:", err);

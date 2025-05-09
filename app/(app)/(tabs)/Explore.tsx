@@ -4,7 +4,7 @@ import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { COLORS } from "@/app/styles/theme";
 import mapStyle from "@/app/styles/mapThemeStyles.json";
-// import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import useAllLocations from "../features/getAllLocation";
 
 
@@ -59,7 +59,7 @@ export default function Explore() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       {errMsg ? <Text>{errMsg}</Text> : null}
 
       <MapView
@@ -87,6 +87,6 @@ export default function Explore() {
             </Marker>
           ))}
       </MapView>
-    </View>
+    </SafeAreaView>
   );
 }
