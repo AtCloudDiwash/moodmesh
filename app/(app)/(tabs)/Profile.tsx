@@ -1,9 +1,12 @@
-import { useAuth } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Button, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Image, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useAllLocations from '../features/getAllLocation';
+import { View, Text, TouchableOpacity, Button } from "react-native";
+import React from "react";
+import { useAuth } from "@/context/authContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 const Profile = () => {
   const { signout, user } = useAuth();
@@ -84,7 +87,6 @@ const Profile = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: '#fff' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
@@ -128,5 +130,6 @@ const styles = StyleSheet.create({
   },
   connectText: { fontSize: 16, color: '#0066FF' },
 });
+
 
 export default Profile;

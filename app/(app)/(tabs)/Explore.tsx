@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Text, ActivityIndicator, View } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Text,
+  ActivityIndicator,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
 import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
+import { Ionicons } from "@expo/vector-icons"; // Import Ionicons
 import { COLORS } from "@/app/styles/theme";
 import mapStyle from "@/app/styles/mapThemeStyles.json";
-// import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import useAllLocations from "../features/getAllLocation";
-
 
 export default function Explore() {
   const [location, setLocation] = useState({
@@ -14,10 +21,10 @@ export default function Explore() {
     longitude: 85.324,
   });
   const [errMsg, setErrMsg] = useState("");
+  const [refreshKey, setRefreshKey] = useState(Date.now());
 
-  const {postedLocations, postedMoods} = useAllLocations()
-
-
+  const { postedLocations, postedMoods, allCreators, loading, error } =
+    useAllLocations(refreshKey);
 
   useEffect(() => {
     (async () => {
@@ -39,12 +46,27 @@ export default function Explore() {
     })();
   }, []);
 
-  if (!location) {
-    return <ActivityIndicator size="large" />;
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(Date.now());
+  }, []);
+
+  if (!location || (loading && postedLocations.length === 0)) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
   }
 
-  if(postedLocations.length <=0){
-    return <ActivityIndicator size="large" />;
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
   }
 
   const camera = {
@@ -59,11 +81,10 @@ export default function Explore() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {errMsg ? <Text>{errMsg}</Text> : null}
-
+    <SafeAreaView style={styles.container}>
+      {errMsg ? <Text style={styles.errorText}>{errMsg}</Text> : null}
       <MapView
-        style={{ flex: 1 }}
+        style={styles.map}
         initialCamera={camera}
         showsUserLocation={true}
         followsUserLocation={true}
@@ -78,15 +99,86 @@ export default function Explore() {
                 longitude: parseFloat(location[1]),
               }}
               pinColor={COLORS.secondary}
+              title={
+                Platform.OS === "android"
+                  ? `Mood: ${
+                      postedMoods[index]?.join(", ") || "N/A"
+                    }, Creator: ${allCreators[index] || "Unknown"}`
+                  : undefined
+              }
             >
-              <Callout>
-                <View style={{ width: 100, padding: 5 }}>
-                  <Text>{`Mood: ${postedMoods[index] || "N/A"}`}</Text>
-                </View>
-              </Callout>
+              {Platform.OS === "ios" && (
+                <Callout>
+                  <View style={styles.callout}>
+                    <Text style={styles.calloutText}>
+                      Mood: {postedMoods[index]?.join(", ") || "N/A"}
+                    </Text>
+                    <Text style={styles.calloutText}>
+                      Creator: {allCreators[index] || "Unknown"}
+                    </Text>
+                  </View>
+                </Callout>
+              )}
             </Marker>
           ))}
       </MapView>
-    </View>
+      <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+        <Ionicons name="refresh" size={24} color="#fff" />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+    marginVertical: 10,
+  },
+  refreshButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: COLORS.primary,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  callout: {
+    width: 150,
+    padding: 8,
+  },
+  calloutText: {
+    fontSize: 14,
+  },
+});

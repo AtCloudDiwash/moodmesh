@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MoodMesh",
+    "name": "moodmesh",
     "slug": "MoodMesh",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,12 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.diwashkuskusmiya.MoodMesh",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/moodmesh-icon.png",
+        "backgroundColor": "#3C64FE"
       },
       "edgeToEdgeEnabled": true,
       "config": {
@@ -38,7 +42,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/moodmesh-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

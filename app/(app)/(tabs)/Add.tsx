@@ -21,7 +21,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/app/styles/theme";
 import { debounce } from "lodash";
 import * as ImagePicker from "expo-image-picker";
-import fetchSuggestions from "../features/fetchSuggestions";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/authContext";
@@ -291,7 +290,7 @@ const Add = () => {
   }, [ratingInput]);
 
   return (
-    <View style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1}}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={{ flex: 1 }}
@@ -517,7 +516,7 @@ const Add = () => {
         visible={isSuccessModalVisible}
         onClose={closeSuccessModal}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
