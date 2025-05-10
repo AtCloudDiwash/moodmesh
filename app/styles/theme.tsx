@@ -10,4 +10,5 @@ export const COLORS = {
   accent: "#f1c40f",
   danger: "#dc3545",
   specialColor: "#ff8000",
+  endsIn: "#ffd700",
 };

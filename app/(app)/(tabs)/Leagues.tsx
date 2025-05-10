@@ -1,71 +1,83 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
   View,
   FlatList,
-  TouchableOpacity,
   SafeAreaView,
-  ImageBackground,
-  Dimensions,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
-
-interface League {
-  id: string;
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-}
-
-const DATA: League[] = [
-  {
-    id: "1",
-    title: "Top 10 Peaceful Places To Code in Kathmandu",
-    subtitle: "Ends in 12:10:12",
-    imageUrl: "https://picsum.photos/200/300",
-  },
-  {
-    id: "2",
-    title: "Top 10 Peaceful Places To Code in Kathmandu",
-    subtitle: "Ends in 12:10:12",
-    imageUrl: "https://picsum.photos/200/300",
-  },
-  {
-    id: "3",
-    title: "Top 10 Peaceful Places To Code in Kathmandu",
-    subtitle: "Ends in 12:10:12",
-    imageUrl: "https://picsum.photos/200/300",
-  },
-];
-
-// Get the screen height
-const windowHeight = Dimensions.get("window").height;
+import LeagueCard from "@/app/components/LeagueCard";
+import useLeaguesInformation from "../features/fetchLeaguesDetails";
+import { COLORS } from "@/app/styles/theme";
 
 const Leagues: React.FC = () => {
-  const renderItem = ({ item }: { item: League }) => (
-    <ImageBackground
-      source={{ uri: item.imageUrl }}
-      style={styles.itemContainer}
-      imageStyle={styles.imageBackground}
-    >
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
-      </View>
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Complete 🏁</Text>
-      </TouchableOpacity>
-    </ImageBackground>
+  const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data, loading, error, hasMore } = useLeaguesInformation(
+    page,
+    10,
+    refreshKey
   );
+
+
+
+  const handleRefresh = useCallback(() => {
+    setPage(1);
+    setRefreshKey(Date.now());
+  }, []);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  }, [loading, hasMore]);
+
+  if (loading && page === 1) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Active Leagues</Text>
       <FlatList
-        data={DATA}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        data={data}
+        renderItem={({ item }) => (
+          <LeagueCard
+            title={item.title}
+            author={item.author}
+            banner_url={item.banner_url}
+            life_span={item.life_span}
+            league_id={item.league_id}
+          />
+        )}
+        keyExtractor={(item) => item.$id}
         contentContainerStyle={styles.list}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        ListFooterComponent={
+          loading && hasMore ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : null
+        }
       />
     </SafeAreaView>
   );
@@ -84,44 +96,14 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
   },
-  itemContainer: {
-    height: windowHeight * 0.35, // 15% of screen height
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    flexDirection: "column",
-    justifyContent: "space-between",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  imageBackground: {
-    borderRadius: 8,
-  },
-  textContainer: {
+  centered: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#fff",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#ffd700", // Gold color to match the screenshot
-  },
-  button: {
-    backgroundColor: "#007bff",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    right: 0
-  },
-  buttonText: {
-    color: "#fff",
+  errorText: {
     fontSize: 16,
-    fontWeight: "500",
+    color: "red",
   },
 });
 

@@ -7,8 +7,6 @@ import useAllLocations from "../features/getAllLocation";
 const Profile = () => {
   const { signout, user } = useAuth();
   const { postedLocations, postedMoods } = useAllLocations();
-
-  console.log("moods", postedMoods);
   const handleSubmit = () => {
     signout();
   };
