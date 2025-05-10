@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ImageBackground,
+  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -45,33 +46,36 @@ const LeagueCard: React.FC<LeagueCardProps> = ({
   }, []);
 
   return (
-    <ImageBackground
-      source={{ uri: banner_url }}
-      style={styles.itemContainer}
-      imageStyle={{ borderRadius: 10 }}
-    >
-      <View style={styles.overlay}>
-        <View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>
-            {/* Ends in {formatTime(remainingTime)} */}
-            Coming soon...
-          </Text>
-          <Text style={styles.author}>By {author}</Text>
+    <SafeAreaView>
+      <ImageBackground
+        source={{ uri: banner_url }}
+        style={styles.itemContainer}
+        imageStyle={{ borderRadius: 10 }}
+      >
+        <View style={styles.overlay}>
+          <View>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>
+              {/* Ends in {formatTime(remainingTime)} */}
+              Coming soon...
+            </Text>
+            <Text style={styles.author}>By {author}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={
+              () => null
+              // router.push({
+              //   pathname: "/(app)/screens/LeagueDetailScreen",
+              //   params: { league_id },
+              // })
+            }
+          >
+            <Text style={styles.buttonText}>Compete 🏁</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>null
-            // router.push({
-            //   pathname: "/(app)/screens/LeagueDetailScreen",
-            //   params: { league_id },
-            // })
-          }
-        >
-          <Text style={styles.buttonText}>Compete 🏁</Text>
-        </TouchableOpacity>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 

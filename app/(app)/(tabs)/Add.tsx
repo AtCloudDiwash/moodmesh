@@ -290,7 +290,7 @@ const Add = () => {
   }, [ratingInput]);
 
   return (
-    <SafeAreaView style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={{ flex: 1 }}
@@ -432,9 +432,12 @@ const Add = () => {
         animationType="fade"
         onRequestClose={() => setShowLocationPicker(false)}
       >
-        
-        <MapView style={{ flex: 1 }} region={region} onPress={handleMapPress}>
-
+        <MapView
+          style={{ flex: 1 }}
+          region={region}
+          onPress={handleMapPress}
+          showsUserLocation={true}
+        >
           {marker && (
             <Marker
               coordinate={{
@@ -460,7 +463,9 @@ const Add = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.submitButton]}
-            onPress={() => { setShowLocationPicker(false)}}
+            onPress={() => {
+              setShowLocationPicker(false);
+            }}
           >
             <Text style={styles.modalButtonText}>Use This Location</Text>
           </TouchableOpacity>

@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 import { databases } from "@/lib/appwriteConfig";
 
-interface LeagueDetails {
-  title: string;
-  description: string;
-  end_time: string;
-  author: string;
-  banner_url:string;
-}
 
 const useLeagueDetails = (
   league_id: string | undefined,
@@ -24,10 +17,11 @@ const useLeagueDetails = (
       setLoading(true);
       try {
         const response = await databases.getDocument(
-          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABASE_ID!,
+          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID!,
           process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_LEAGUES_COLLECTION_ID!,
           league_id
         );
+        console.log(response)
 
         setData({
           title: response.title,

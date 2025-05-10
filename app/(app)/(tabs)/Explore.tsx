@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Text,
   ActivityIndicator,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/app/styles/theme";
 import mapStyle from "@/app/styles/mapThemeStyles.json";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +22,7 @@ export default function Explore() {
   });
   const [errMsg, setErrMsg] = useState("");
   const [refreshKey, setRefreshKey] = useState(Date.now());
+  const mapRef = useRef<MapView | null>(null); // Ref to the MapView
 
   const { postedLocations, postedMoods, allCreators, loading, error } =
     useAllLocations(refreshKey);
@@ -36,9 +37,17 @@ export default function Explore() {
         }
 
         let currentLocation = await Location.getCurrentPositionAsync();
-        setLocation({
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
+        const { latitude, longitude } = currentLocation.coords;
+
+        setLocation({ latitude, longitude });
+
+        // Animate map camera to user's location
+        mapRef.current?.animateCamera({
+          center: { latitude, longitude },
+          zoom: 15,
+          pitch: 45,
+          heading: 0,
+          altitude: 500,
         });
       } catch (error) {
         setErrMsg("Error getting location, using fallback");
@@ -84,6 +93,7 @@ export default function Explore() {
     <SafeAreaView style={styles.container}>
       {errMsg ? <Text style={styles.errorText}>{errMsg}</Text> : null}
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialCamera={camera}
         showsUserLocation={true}
@@ -99,14 +109,14 @@ export default function Explore() {
                 longitude: parseFloat(location[1]),
               }}
               pinColor={COLORS.secondary}
-              title={
-                Platform.OS === "android"
-                  ? `Mood: ${
-                      postedMoods[index]?.join(", ") || "N/A"
-                    }, Creator: ${allCreators[index] || "Unknown"}`
-                  : undefined
-              }
-            >
+                title={
+                  Platform.OS === "android"
+                    ? `Mood: ${
+                        postedMoods[index]?.join(", ") || "N/A"
+                      }`
+                    : undefined
+                }
+              >
               {Platform.OS === "ios" && (
                 <Callout>
                   <View style={styles.callout}>
