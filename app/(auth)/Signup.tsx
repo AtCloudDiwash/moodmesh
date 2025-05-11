@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Modal,
 } from "react-native";
 
 import { COLORS } from "../styles/theme";
-import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ID } from "appwrite";
 import { account, databases } from "@/lib/appwriteConfig";
@@ -23,55 +23,52 @@ export default function SignupScreen() {
   const [password, setPassword] = useState(null);
   const [confirmPassword, setConfirmPassword] = useState(null);
   const [username, setUsername] = useState(null);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
-
-  const handleSubmit = async ()=>{
-    if(password !== confirmPassword){
-        console.log("Password donot match")
-        return
+  const handleSubmit = async () => {
+    if (password !== confirmPassword) {
+      setModalMessage("Password does not match");
+      setModalVisible(true);
+      return;
     }
 
-    try{
-
+    try {
       const result = await account.create(
         ID.unique(),
         email,
         confirmPassword,
         username
-      )
+      );
 
-      try{
-        console.log(username)
-          const userProfileRegister = await databases.createDocument(
-            process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
-            process.env
-              .EXPO_PUBLIC_APPWRITE_MOODMESH_USER_PROFILE_COLLECTION_ID,
-            ID.unique(),
-            {
-              username,
-              total_likes: 0,
-              total_mesh_points: 0,
-              saved_posts: [],
-              avatar_url: [],
-            }
-          );
+      try {
+        const userProfileRegister = await databases.createDocument(
+          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
+          process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_USER_PROFILE_COLLECTION_ID,
+          ID.unique(),
+          {
+            username,
+            total_likes: 0,
+            total_mesh_points: 0,
+            saved_posts: [],
+            avatar_url: [],
+          }
+        );
 
-          console.log(userProfileRegister)
-
-          router.push("/Login")
-      } catch(error){
-        console.error(error)
+        setModalMessage("Account created successfully");
+        setModalVisible(true);
+        router.push("/Login");
+      } catch (error) {
+        console.error(error);
+        setModalMessage("Error creating user profile");
+        setModalVisible(true);
       }
-      setSuccess("Account created successfully")
-
-    } catch(err){
-      console.log(err)
-      setError("Account creation error")
+    } catch (err) {
+      console.log(err);
+      setModalMessage("Account creation error");
+      setModalVisible(true);
     }
-  }
-
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -82,7 +79,7 @@ export default function SignupScreen() {
           style={styles.input}
           value={username}
           placeholder="Username"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.placeholder || "#999"}
           onChangeText={(username) => setUsername(username)}
         />
 
@@ -91,7 +88,7 @@ export default function SignupScreen() {
           placeholder="Email"
           value={email}
           keyboardType="email-address"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.placeholder || "#999"}
           onChangeText={(email) => setEmail(email)}
         />
 
@@ -100,7 +97,7 @@ export default function SignupScreen() {
           placeholder="Password"
           secureTextEntry
           value={password}
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.placeholder || "#999"}
           onChangeText={(password) => setPassword(password)}
         />
 
@@ -109,7 +106,7 @@ export default function SignupScreen() {
           placeholder="Confirm Password"
           secureTextEntry
           value={confirmPassword}
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.placeholder || "#999"}
           onChangeText={(confirmPassword) =>
             setConfirmPassword(confirmPassword)
           }
@@ -119,10 +116,37 @@ export default function SignupScreen() {
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
-        <Text style={styles.linkText} onPress={()=>router.push("/Login")}>Already have an account? Log in</Text>
-
-        <Text>{success ? (<Text style={{color:"green"}}>success</Text>) : <Text style={{color: "red"}}>error</Text>}</Text>
+        <TouchableOpacity onPress={() => router.push("/Login")}>
+          <Text style={styles.linkText}>Already have an account? Log in</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text
+              style={[
+                styles.modalTitle,
+                modalMessage.includes("Error") && styles.modalTitleError,
+              ]}
+            >
+              {modalMessage.includes("Error") ? "Error" : "Success"}
+            </Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -130,46 +154,106 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background || "#F5F5F5",
   },
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 30,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 48,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 30,
+    fontSize: 34,
+    fontWeight: "700",
+    marginBottom: 32,
     textAlign: "center",
-    color: "#333",
+    color: COLORS.textPrimary || "#1A1A1A",
+    letterSpacing: 0.5,
   },
   input: {
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    backgroundColor: "#fff",
+    height: 56,
+    borderWidth: 0,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: COLORS.inputBackground || "#FFFFFF",
+    fontSize: 16,
+    color: COLORS.textPrimary || "#1A1A1A",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   button: {
-    backgroundColor: "#28A745",
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary || "#28A745",
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 20,
+    marginVertical: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: "#fff",
+    color: COLORS.buttonText || "#FFFFFF",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   linkText: {
-    color: "#555",
+    color: COLORS.link || "#555555",
     textAlign: "center",
+    fontSize: 15,
+    fontWeight: "500",
     textDecorationLine: "underline",
-    fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  modalContent: {
+    backgroundColor: COLORS.modalBackground || "#FFFFFF",
+    padding: 24,
+    borderRadius: 20,
+    width: "85%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 12,
+    color: COLORS.success || "#28A745",
+  },
+  modalTitleError: {
+    color: COLORS.error || "#FF4D4D",
+  },
+  modalMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    color: COLORS.textSecondary || "#333333",
+    lineHeight: 24,
+  },
+  modalButton: {
+    backgroundColor: COLORS.secondary || "#28A745",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: COLORS.buttonText || "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });

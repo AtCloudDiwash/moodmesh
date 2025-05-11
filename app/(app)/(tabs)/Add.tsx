@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
 
     padding: 20,
     backgroundColor: "#fff",
-    paddingBottom: 100, // Extra padding to ensure content is scrollable
+    paddingBottom: 100,
   },
   header: {
     fontSize: 22,

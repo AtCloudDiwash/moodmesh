@@ -11,97 +11,113 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/authContext";
 import { Redirect } from "expo-router";
-
+import { COLORS } from "../styles/theme";
 
 export default function LoginScreen() {
-  const router = useRouter()
-  const {session, login} = useAuth();
+  const router = useRouter();
+  const { session, login } = useAuth();
   const [email, setEmail] = useState();
   const [password, setPassword] = useState();
 
-
   const handleSubmit = async () => {
-    login({email, password})
+    login({ email, password });
   };
 
-  
   if (session) {
     return <Redirect href={"/(app)/(tabs)/Feed"} />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Welcome Back!</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        keyboardType="email-address"
-        placeholderTextColor="#999"
-        onChangeText={(email)=>setEmail(email)}
-      />
+      <View style={styles.content}>
+        <Text style={styles.title}>Welcome Back!</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          keyboardType="email-address"
+          placeholderTextColor={COLORS.placeholder || "#999"}
+          onChangeText={(email) => setEmail(email)}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        secureTextEntry
-        placeholderTextColor="#999"
-        onChangeText={(password)=>setPassword(password)}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          secureTextEntry
+          placeholderTextColor={COLORS.placeholder || "#999"}
+          onChangeText={(password) => setPassword(password)}
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.linkText} onPress={() => router.push("/Signup")}>
-        Don&apos;t have an account? Sign up
-      </Text>
+        <TouchableOpacity onPress={() => router.push("/Signup")}>
+          <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background || "#F5F5F5",
+  },
+  content: {
+    flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 30,
-    backgroundColor: "#f8f8f8",
+    paddingHorizontal: 24,
+    paddingVertical: 48,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 30,
+    fontSize: 34,
+    fontWeight: "700",
+    marginBottom: 32,
     textAlign: "center",
-    color: "#333",
+    color: COLORS.textPrimary || "#1A1A1A",
+    letterSpacing: 0.5,
   },
   input: {
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    backgroundColor: "#fff",
+    height: 56,
+    borderWidth: 0,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: COLORS.inputBackground || "#FFFFFF",
+    fontSize: 16,
+    color: COLORS.textPrimary || "#1A1A1A",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   button: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary || "#007AFF",
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 20,
+    marginVertical: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: "#fff",
+    color: COLORS.buttonText || "#FFFFFF",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   linkText: {
-    color: "#555",
+    color: COLORS.link || "#555555",
     textAlign: "center",
+    fontSize: 15,
+    fontWeight: "500",
     textDecorationLine: "underline",
-    fontSize: 14,
   },
 });

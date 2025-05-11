@@ -16,12 +16,14 @@ const useLikeInteraction = (
   initialLikeCount: number,
   initialLikedBy: string[] = []
 ): LikeInteraction => {
-  const [isLiked, setIsLiked] = useState(false);
+  const { user } = useAuth() as { user: { name: string } };
+
+  const [isLiked, setIsLiked] = useState(() =>
+    initialLikedBy.includes(user?.name ?? "")
+  );
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isLiking, setIsLiking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const { user } = useAuth() as { user: { name: string } };
 
   useEffect(() => {
     if (user?.name) {

@@ -1,41 +1,44 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Linking,
+} from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/app/styles/theme";
-import { useState } from "react";
 import CustomCarousel from "./CustomCarousel";
 import useUserPost from "../(app)/features/fetchUserPost";
-import { globalCss } from "../styles/globalCss";
 import useLikeInteraction from "../(app)/features/setInteraction";
 import { useAuth } from "@/context/authContext";
 
-const PostCard = ({ postData, refreshKey}) => {
-
-  const {post, imageUrls} = useUserPost(postData, refreshKey)
-  const {user} = useAuth()
+const PostCard = ({ postData, refreshKey }) => {
+  const { post, imageUrls } = useUserPost(postData, refreshKey);
+  const { user } = useAuth();
 
   const [isCaptionVisible, setIsCaptionVisible] = useState(false);
   const [isFavorites, setIsFavorites] = useState(false);
+
   const { isLiked, likeCount, isLiking, toggleLike, error } =
-    useLikeInteraction(postData, post?.like_counts || 0, post?.liked_by||[]);
+    useLikeInteraction(postData, post?.like_counts || 0, post?.liked_by || []);
 
-
-  const handlSetFavorites = () => {
+  const handleSetFavorites = () => {
     setIsFavorites((prev) => !prev);
   };
 
-    const openGoogleMaps = (latitude, longitude) => {
-
-      const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
-      Linking.openURL(url).catch((err) =>
-        console.error("Failed to open map", err)
-      );
-    };
+  const openGoogleMaps = (latitude, longitude) => {
+    const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open map", err)
+    );
+  };
 
   if (!post) {
-    return;
+    return null; // If post data is not available yet, return null (or loading state)
   }
 
   return (
@@ -43,13 +46,11 @@ const PostCard = ({ postData, refreshKey}) => {
       {/* User Info */}
       <View style={styles.userInfo}>
         <Image
-          source={{ uri: "https://picsum.photos/id/237/200/300" }}
+          source={{ uri: "https://picsum.photos/id/237/200/300" }} // Replace with actual user avatar URL
           style={styles.avatar}
         />
         <View>
-          <Text style={styles.userName}>
-            {post.username ? post.username : "Fetching..."}
-          </Text>
+          <Text style={styles.userName}>{post.username || "Fetching..."}</Text>
           <Text style={styles.userFeeling}>I was Here</Text>
         </View>
       </View>
@@ -86,7 +87,6 @@ const PostCard = ({ postData, refreshKey}) => {
       </View>
 
       {/* Caption */}
-
       {post.username ? (
         <Text style={styles.caption}>{post.title}</Text>
       ) : (
@@ -113,29 +113,21 @@ const PostCard = ({ postData, refreshKey}) => {
             <FontAwesome
               name="thumbs-up"
               size={18}
-              color={
-                (isLiked)
-                  ? COLORS.primary
-                  : COLORS.iconColor
-              }
+              color={isLiked ? COLORS.primary : COLORS.iconColor}
             />
             <Text style={styles.engagementText}>
-              {likeCount === 0?post.like_counts:likeCount}
+              {likeCount === 0 ? post.like_counts : likeCount}
             </Text>
           </TouchableOpacity>
         </View>
         <View style={styles.engagementItem}>
-          <Ionicons
-            name="star"
-            size={globalCss.iconSizeInteraction}
-            color="#f1c40f"
-          />
+          <Ionicons name="star" size={24} color="#f1c40f" />
           <Text style={styles.engagementText}>{post.rating}</Text>
         </View>
-        <TouchableOpacity onPress={handlSetFavorites}>
+        <TouchableOpacity onPress={handleSetFavorites}>
           <MaterialIcons
             name="favorite"
-            size={globalCss.iconSizeInteraction}
+            size={24}
             color={isFavorites ? COLORS.specialColor : COLORS.iconColor}
           />
         </TouchableOpacity>
@@ -196,12 +188,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
   },
-
   description: {
     fontSize: 12,
     color: COLORS.cardBackground,
     fontWeight: 500,
-    lineHeight: 12*1.2
+    lineHeight: 12 * 1.2,
   },
   postImage: {
     width: "100%",
@@ -222,7 +213,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    opacity: .7,
+    opacity: 0.7,
     width: "60%",
   },
   locationText: {

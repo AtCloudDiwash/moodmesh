@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     alignItems: "center",
+    paddingTop: 20,
   },
   titleContainer: {
     marginTop: 10,
