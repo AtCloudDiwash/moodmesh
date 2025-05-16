@@ -25,24 +25,68 @@ export default function SignupScreen() {
   const [username, setUsername] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const validateInputs = () => {
+    const newErrors = {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!username || username.trim() === "") {
+      newErrors.username = "Username is required.";
+    }
+
+    if (!email || email.trim() === "") {
+      newErrors.email = "Email is required.";
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = "Enter a valid email.";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Confirm your password.";
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(newErrors);
+
+    return (
+      !newErrors.username &&
+      !newErrors.email &&
+      !newErrors.password &&
+      !newErrors.confirmPassword
+    );
+  };
 
   const handleSubmit = async () => {
-    if (password !== confirmPassword) {
-      setModalMessage("Password does not match");
-      setModalVisible(true);
-      return;
-    }
+    if (!validateInputs()) return;
 
     try {
       const result = await account.create(
         ID.unique(),
         email,
-        confirmPassword,
+        password,
         username
       );
 
       try {
-        const userProfileRegister = await databases.createDocument(
+        await databases.createDocument(
           process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_DATABSE_ID,
           process.env.EXPO_PUBLIC_APPWRITE_MOODMESH_USER_PROFILE_COLLECTION_ID,
           ID.unique(),
@@ -57,7 +101,7 @@ export default function SignupScreen() {
 
         setModalMessage("Account created successfully");
         setModalVisible(true);
-        router.push("/Login");
+        setTimeout(() => router.push("/Login"), 1500);
       } catch (error) {
         console.error(error);
         setModalMessage("Error creating user profile");
@@ -80,8 +124,11 @@ export default function SignupScreen() {
           value={username}
           placeholder="Username"
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(username) => setUsername(username)}
+          onChangeText={setUsername}
         />
+        {errors.username ? (
+          <Text style={styles.errorText}>{errors.username}</Text>
+        ) : null}
 
         <TextInput
           style={styles.input}
@@ -89,8 +136,11 @@ export default function SignupScreen() {
           value={email}
           keyboardType="email-address"
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(email) => setEmail(email)}
+          onChangeText={setEmail}
         />
+        {errors.email ? (
+          <Text style={styles.errorText}>{errors.email}</Text>
+        ) : null}
 
         <TextInput
           style={styles.input}
@@ -98,8 +148,11 @@ export default function SignupScreen() {
           secureTextEntry
           value={password}
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(password) => setPassword(password)}
+          onChangeText={setPassword}
         />
+        {errors.password ? (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        ) : null}
 
         <TextInput
           style={styles.input}
@@ -107,10 +160,11 @@ export default function SignupScreen() {
           secureTextEntry
           value={confirmPassword}
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(confirmPassword) =>
-            setConfirmPassword(confirmPassword)
-          }
+          onChangeText={setConfirmPassword}
         />
+        {errors.confirmPassword ? (
+          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <Text style={styles.buttonText}>Sign Up</Text>
@@ -175,7 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 16,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
     backgroundColor: COLORS.inputBackground || "#FFFFFF",
     fontSize: 16,
     color: COLORS.textPrimary || "#1A1A1A",
@@ -184,6 +238,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  errorText: {
+    color: COLORS.error || "red",
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: COLORS.primary || "#28A745",
@@ -198,13 +258,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: COLORS.buttonText || "#FFFFFF",
+    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 18,
     letterSpacing: 0.5,
   },
   linkText: {
-    color: COLORS.link || "#555555",
+    color: "#555555",
     textAlign: "center",
     fontSize: 15,
     fontWeight: "500",
@@ -217,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalContent: {
-    backgroundColor: COLORS.modalBackground || "#FFFFFF",
+    backgroundColor: "#FFFFFF",
     padding: 24,
     borderRadius: 20,
     width: "85%",
@@ -232,10 +292,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 12,
-    color: COLORS.success || "#28A745",
+    color: "#28A745",
   },
   modalTitleError: {
-    color: COLORS.error || "#FF4D4D",
+    color: "#FF4D4D",
   },
   modalMessage: {
     fontSize: 16,
@@ -252,7 +312,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalButtonText: {
-    color: COLORS.buttonText || "#FFFFFF",
+    color:  "#FFFFFF",
     fontWeight: "600",
     fontSize: 16,
   },

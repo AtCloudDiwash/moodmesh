@@ -6,21 +6,60 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 
-import { useRouter } from "expo-router";
+import { useRouter, Redirect } from "expo-router";
 import { useAuth } from "@/context/authContext";
-import { Redirect } from "expo-router";
 import { COLORS } from "../styles/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { session, login } = useAuth();
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {}
+  );
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email) {
+      newErrors.email = "Email is required.";
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = "Enter a valid email address.";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async () => {
-    login({ email, password });
+    if (!validate()) return;
+
+    setLoading(true);
+    try {
+      await login({ email, password });
+      setShowModal(true);
+      setTimeout(() => {
+        setShowModal(false);
+      }, 1500);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
+    setLoading(false);
   };
 
   if (session) {
@@ -31,14 +70,20 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome Back!</Text>
+
         <TextInput
           style={styles.input}
           placeholder="Email"
           value={email}
           keyboardType="email-address"
+          autoCapitalize="none"
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(email) => setEmail(email)}
+          onChangeText={(email) => {
+            setEmail(email);
+            if (errors.email) setErrors({ ...errors, email: undefined });
+          }}
         />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
         <TextInput
           style={styles.input}
@@ -46,17 +91,44 @@ export default function LoginScreen() {
           value={password}
           secureTextEntry
           placeholderTextColor={COLORS.placeholder || "#999"}
-          onChangeText={(password) => setPassword(password)}
+          onChangeText={(password) => {
+            setPassword(password);
+            if (errors.password) setErrors({ ...errors, password: undefined });
+          }}
         />
+        {errors.password && (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        )}
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Login</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/Signup")}>
           <Text style={styles.linkText}>Don't have an account? Sign up</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showModal}
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalText}>🎉 Login Successful!</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -86,7 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: COLORS.inputBackground || "#FFFFFF",
+    backgroundColor: "#FFFFFF",
     fontSize: 16,
     color: COLORS.textPrimary || "#1A1A1A",
     shadowColor: "#000",
@@ -108,16 +180,40 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: COLORS.buttonText || "#FFFFFF",
+    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 18,
     letterSpacing: 0.5,
   },
   linkText: {
-    color: COLORS.link || "#555555",
+    color: "#555555",
     textAlign: "center",
     fontSize: 15,
     fontWeight: "500",
     textDecorationLine: "underline",
   },
+    errorText: {
+    color: "red",
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    padding: 24,
+    borderRadius: 16,
+    elevation: 6,
+  },
+  modalText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+  },
+
 });

@@ -46,10 +46,6 @@ const CustomCarousel = ({ images }: { images: string[] }) => {
         }}
         loop={false}
         pagingEnabled
-        panGestureHandlerProps={{
-          activeOffsetX: [-20, 20], // Activate only on horizontal swipes
-          failOffsetY: [-3, 3], // Allow vertical scrolling to fail when gesture is detected
-        }}
       />
       <PaginationDots activeIndex={activeIndex} images={images} />
     </View>

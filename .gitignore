@@ -52,3 +52,8 @@ app-example
 # 👉 Logs or coverage (optional)
 coverage/
 logs/
+
+
+#android
+
+android/
