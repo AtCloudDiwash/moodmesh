@@ -1,50 +1,50 @@
-# Welcome to your Expo app 👋
+# MoodMesh — Map Your Mood
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**MoodMesh** is a mood-powered, map-based social discovery platform.  
+We help people share and explore places through *how they feel*, not just what they rate.  
+Think emotional Google Maps meets Pinterest, wrapped in vibes.
 
-## Get started
+## 🚀 Live Preview
 
-1. Install dependencies
+> Coming soon...  
+> Stay tuned for our public beta!
 
-   ```bash
-   npm install
-   ```
 
-2. Start the app
+## 🛠️ Features
 
-   ```bash
-   npx expo start
-   ```
+- 📍 **Mood-based Map** – Explore locations tagged with emotions, not just reviews  
+- 🧾 **Post Creation** – Add photos, ratings, moods, and geotags  
+- 📚 **Collections** – Curate and share themed place lists  
+- 🔄 **Feed Filtering** – Filter by mood, vibe, or venue type  
+- 🏆 **Leagues** – Compete in time-based creative challenges  
+- 🎯 **Creator Points & Milestones** – Earn rewards, badges, and unlock perks
 
-In the output, you'll find options to open the app in a
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🧱 Tech Stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Frontend**: React Native, Expo, TypeScript  
+- **Routing**: `expo-router`  
+- **Backend**: Node.js, Appwrite as BaaS 
+- **Database**: Appwrite Database  
+- **API**: RESTful architecture  
+- **Authentication**: Appwrite auth 
+- **Blockchain (planned)**: Solana spl tokens  
 
-## Get a fresh project
 
-When you're ready, run:
+# Inspiration
 
-```bash
-npm run reset-project
-```
+Submitted for the **Solana Breakpoint Hackathon 2025**, MoodMesh was born out of a desire to make maps *feel human again*.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🤝 Contributing
 
-## Learn more
+Pull requests are welcome. Feel free to fork this project and submit your ideas.
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🛡️ License
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+MIT © 2025 MoodMesh Team
 
-## Join the community
+## 📬 Contact
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Twitter: [@moodmesh_](https://twitter.com/moodmesh_)  
+Instagram: [@moodmesh_](https://instagram.com/moodmesh_)  
+Email: moodmesh.25@gmail.com
