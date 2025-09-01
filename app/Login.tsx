@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  Image,
 } from "react-native";
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -20,9 +20,7 @@ import Animated, {
   withSpring,
   withDelay,
   FadeIn,
-  SlideInUp,
-  interpolate,
-  Extrapolation,
+  Easing,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,15 +33,11 @@ const Login: React.FC = () => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
 
- 
-  const player = useVideoPlayer(
-    require("../assets/video.mp4"),
-    
-    (player) => {
-      player.loop = true;
-      player.muted = true;
-    }
-  );
+  // Video player setup
+  const player = useVideoPlayer(require("../assets/video.mp4"), (player) => {
+    player.loop = true;
+    player.muted = true;
+  });
 
   // Listen to video events
   const { isPlaying } = useEvent(player, "playingChange", {
@@ -60,24 +54,37 @@ const Login: React.FC = () => {
 
   // Animation values
   const fadeValue = useSharedValue(0);
-  const slideValue = useSharedValue(50);
-  const scaleValue = useSharedValue(0.8);
+  const scaleValue = useSharedValue(0.95);
+  const overlayOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // Trigger animations on mount
-    fadeValue.value = withTiming(1, { duration: 1000 });
-    slideValue.value = withSpring(0, { damping: 10 });
-    scaleValue.value = withSpring(1, { damping: 8 });
+    // Staggered animations
+    overlayOpacity.value = withTiming(1, { duration: 800 });
 
+    fadeValue.value = withDelay(
+      300,
+      withTiming(1, {
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
 
-    // Try to play video after a delay with error handling
+    scaleValue.value = withDelay(
+      400,
+      withSpring(1, {
+        damping: 12,
+        stiffness: 100,
+      })
+    );
+
+    // Try to play video
     const timer = setTimeout(async () => {
       try {
         await player.play();
       } catch (error) {
         setVideoError(`Play error: ${error}`);
       }
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, []);
@@ -86,52 +93,51 @@ const Login: React.FC = () => {
   const containerAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: fadeValue.value,
-      transform: [
-        { translateY: slideValue.value },
-        { scale: scaleValue.value },
-      ],
+      transform: [{ scale: scaleValue.value }],
+    };
+  });
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: overlayOpacity.value,
     };
   });
 
   const handleLogin = () => {
-    // Add login logic here
     console.log("Login pressed", { email, password });
   };
 
   const handleGoogleLogin = () => {
-    // Add Google login logic here
     console.log("Google login pressed");
   };
 
   const handleForgotPassword = () => {
-    // Add forgot password logic here
     console.log("Forgot password pressed");
   };
 
   const handleSignup = () => {
-    // Add signup navigation logic here
     console.log("Signup pressed");
   };
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1}}>
       <StatusBar
         barStyle="light-content"
         backgroundColor="transparent"
         translucent
       />
 
-      {/* Background Video with fallback */}
+      {/* Background Video with fallback - Full screen coverage */}
       {!videoError ? (
         <VideoView
           style={{
             position: "absolute",
-            top: 0,
+            top: -50, // Extend beyond top
             left: 0,
-            bottom: 0,
             right: 0,
+            bottom: -50, // Extend beyond bottom
             width: width,
-            height: height,
+            height: height + 100, // Add extra height
           }}
           player={player}
           allowsFullscreen={false}
@@ -140,20 +146,46 @@ const Login: React.FC = () => {
           contentFit="cover"
         />
       ) : (
-        // Fallback animated gradient background
         <LinearGradient
           colors={["#4f46e5", "#7c3aed", "#8b5cf6", "#4f46e5"]}
           style={{
             position: "absolute",
-            top: 0,
+            top: -50,
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: -50,
+            width: width,
+            height: height + 100,
           }}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
       )}
+
+      {/* Gradient Overlay - Full screen coverage */}
+      <Animated.View
+        style={[
+          overlayAnimatedStyle,
+          {
+            position: "absolute",
+            top: -50,
+            left: 0,
+            right: 0,
+            bottom: -50,
+            width: width,
+            height: height + 100,
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={[
+            "rgba(79, 70, 229, 0.8)",
+            "rgba(147, 51, 234, 0.8)",
+            "rgba(79, 70, 229, 0.9)",
+          ]}
+          style={{ flex: 1 }}
+        />
+      </Animated.View>
 
       {/* Debug Info - Remove in production */}
       {__DEV__ && videoError && (
@@ -166,6 +198,7 @@ const Login: React.FC = () => {
             backgroundColor: "red",
             padding: 10,
             borderRadius: 5,
+            zIndex: 1000,
           }}
         >
           <Text style={{ color: "white", fontSize: 12 }}>
@@ -192,26 +225,9 @@ const Login: React.FC = () => {
         </View>
       )}
 
-
-      {/* Gradient Overlay */}
-      <LinearGradient
-        colors={[
-          "rgba(79, 70, 229, 0.8)",
-          "rgba(147, 51, 234, 0.8)",
-          "rgba(79, 70, 229, 0.9)",
-        ]}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -219,68 +235,129 @@ const Login: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View
-            className="flex-1 justify-center px-6"
-            style={containerAnimatedStyle}
+            style={[
+              {
+                flex: 1,
+                justifyContent: "center",
+                paddingHorizontal: 24,
+              },
+              containerAnimatedStyle,
+            ]}
           >
             {/* Top spacing for status bar */}
-            <View className="h-16" />
+            <View style={{ height: 64 }} />
 
             {/* Header */}
             <Animated.View
-              entering={FadeIn.delay(300).duration(800)}
-              className="items-center mb-12"
+              entering={FadeIn.delay(600).duration(1000)}
+              style={{
+                alignItems: "center",
+                marginBottom: 48,
+              }}
             >
-              <Text className="text-white text-4xl font-bold mb-2">
+              <Text
+                style={{
+                  color: "#ffffff",
+                  fontSize: 36,
+                  fontWeight: "700",
+                  marginBottom: 4,
+                }}
+              >
                 moodmesh
               </Text>
-              <Text className="text-white/80 text-base">
+              <Text
+                style={{
+                  color: "rgba(255, 255, 255, 0.8)",
+                  fontSize: 16,
+                }}
+              >
                 Not just another review app
               </Text>
             </Animated.View>
 
             {/* Form Container */}
-            <Animated.View
-              entering={SlideInUp.delay(500).duration(800)}
-              className="space-y-6"
-            >
+            <View style={{ gap: 20 }}>
               {/* Email Input */}
-              <View className="space-y-2">
-                <Text className="text-white text-sm font-medium ml-1">
+              <Animated.View
+                entering={FadeIn.delay(800).duration(800)}
+                style={{ gap: 8 }}
+              >
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: "500",
+                    marginLeft: 4,
+                  }}
+                >
                   Email
                 </Text>
-                <View className="relative">
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Enter your email"
-                    placeholderTextColor="rgba(255,255,255,0.6)"
-                    className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-4 text-white text-base border border-white/30"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter your email"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    paddingVertical: 16,
+                    color: "#ffffff",
+                    fontSize: 16,
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    height: 56,
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </Animated.View>
 
               {/* Password Input */}
-              <View className="space-y-2">
-                <Text className="text-white text-sm font-medium ml-1">
+              <Animated.View
+                entering={FadeIn.delay(950).duration(800)}
+                style={{ gap: 8 }}
+              >
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: "500",
+                    marginLeft: 4,
+                  }}
+                >
                   Password
                 </Text>
-                <View className="relative">
+                <View style={{ position: "relative" }}>
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Enter your password"
                     placeholderTextColor="rgba(255,255,255,0.6)"
-                    className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-4 pr-12 text-white text-base border border-white/30"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.2)",
+                      borderRadius: 16,
+                      paddingHorizontal: 16,
+                      paddingVertical: 16,
+                      paddingRight: 48,
+                      color: "#ffffff",
+                      fontSize: 16,
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      height: 56,
+                    }}
                     secureTextEntry={!isPasswordVisible}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                   <TouchableOpacity
                     onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                    className="absolute right-4 top-4"
+                    style={{
+                      position: "absolute",
+                      right: 16,
+                      top: 18,
+                    }}
                   >
                     <Ionicons
                       name={isPasswordVisible ? "eye-off" : "eye"}
@@ -289,16 +366,30 @@ const Login: React.FC = () => {
                     />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </Animated.View>
 
               {/* Login Button */}
-              <Animated.View entering={FadeIn.delay(800).duration(600)}>
+              <Animated.View entering={FadeIn.delay(1100).duration(800)}>
                 <TouchableOpacity
                   onPress={handleLogin}
-                  className="bg-blue-600 rounded-xl py-4 mt-6 shadow-lg"
+                  style={{
+                    backgroundColor: "#2563eb",
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    marginTop: 20,
+                    height: 56,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                   activeOpacity={0.8}
                 >
-                  <Text className="text-white text-center text-lg font-semibold">
+                  <Text
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 18,
+                      fontWeight: "600",
+                    }}
+                  >
                     Login
                   </Text>
                 </TouchableOpacity>
@@ -306,11 +397,16 @@ const Login: React.FC = () => {
 
               {/* Forgot Password */}
               <Animated.View
-                entering={FadeIn.delay(1000).duration(600)}
-                className="items-center"
+                entering={FadeIn.delay(1250).duration(600)}
+                style={{ alignItems: "center" }}
               >
                 <TouchableOpacity onPress={handleForgotPassword}>
-                  <Text className="text-white/80 text-base">
+                  <Text
+                    style={{
+                      color: "rgba(255, 255, 255, 0.8)",
+                      fontSize: 16,
+                    }}
+                  >
                     Forgot Password ?
                   </Text>
                 </TouchableOpacity>
@@ -318,23 +414,62 @@ const Login: React.FC = () => {
 
               {/* Divider */}
               <Animated.View
-                entering={FadeIn.delay(1200).duration(600)}
-                className="flex-row items-center my-6"
+                entering={FadeIn.delay(1400).duration(600)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginVertical: 20,
+                }}
               >
-                <View className="flex-1 h-px bg-white/30" />
-                <Text className="text-white/60 mx-4 text-sm">or</Text>
-                <View className="flex-1 h-px bg-white/30" />
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: "rgba(255, 255, 255, 0.3)",
+                  }}
+                />
+                <Text
+                  style={{
+                    color: "rgba(255, 255, 255, 0.6)",
+                    marginHorizontal: 16,
+                    fontSize: 14,
+                  }}
+                >
+                  or
+                </Text>
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: "rgba(255, 255, 255, 0.3)",
+                  }}
+                />
               </Animated.View>
 
               {/* Google Login Button */}
-              <Animated.View entering={FadeIn.delay(1400).duration(600)}>
+              <Animated.View entering={FadeIn.delay(1550).duration(800)}>
                 <TouchableOpacity
                   onPress={handleGoogleLogin}
-                  className="bg-white/90 rounded-xl py-4 flex-row items-center justify-center space-x-3 shadow-lg"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    height: 56,
+                  }}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="logo-google" size={20} color="#4285F4" />
-                  <Text className="text-gray-700 text-lg font-medium">
+                  <Text
+                    style={{
+                      color: "#374151",
+                      fontSize: 18,
+                      fontWeight: "600",
+                    }}
+                  >
                     Continue with google
                   </Text>
                 </TouchableOpacity>
@@ -342,37 +477,98 @@ const Login: React.FC = () => {
 
               {/* Sign Up Link */}
               <Animated.View
-                entering={FadeIn.delay(1600).duration(600)}
-                className="items-center mt-8"
+                entering={FadeIn.delay(1700).duration(600)}
+                style={{
+                  alignItems: "center",
+                  marginTop: 32,
+                }}
               >
-                <View className="flex-row items-center">
-                  <Text className="text-white/80 text-base">
-                    Dont' have an account ?
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "rgba(255, 255, 255, 0.8)",
+                      fontSize: 16,
+                    }}
+                  >
+                    Don't have an account ?{" "}
                   </Text>
-                  <TouchableOpacity onPress={handleSignup} className="ml-1">
-                    <Text className="text-white text-base underline">
+                  <TouchableOpacity onPress={handleSignup}>
+                    <Text
+                      style={{
+                        color: "#ffffff",
+                        fontSize: 16,
+                        textDecorationLine: "underline",
+                      }}
+                    >
                       Signup
                     </Text>
                   </TouchableOpacity>
                 </View>
               </Animated.View>
-            </Animated.View>
+            </View>
 
             {/* Bottom Links */}
             <Animated.View
-              entering={FadeIn.delay(1800).duration(600)}
-              className="flex-row justify-center space-x-6 mt-12 mb-8"
+              entering={FadeIn.delay(1850).duration(600)}
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 20,
+                marginTop: 48,
+                marginBottom: 32,
+              }}
             >
               <TouchableOpacity>
-                <Text className="text-white/60 text-sm">About us</Text>
+                <Text
+                  style={{
+                    color: "rgba(255, 255, 255, 0.6)",
+                    fontSize: 14,
+                  }}
+                >
+                  About us
+                </Text>
               </TouchableOpacity>
-              <Text className="text-white/40 text-sm">|</Text>
+              <Text
+                style={{
+                  color: "rgba(255, 255, 255, 0.4)",
+                  fontSize: 14,
+                }}
+              >
+                |
+              </Text>
               <TouchableOpacity>
-                <Text className="text-white/60 text-sm">Terms</Text>
+                <Text
+                  style={{
+                    color: "rgba(255, 255, 255, 0.6)",
+                    fontSize: 14,
+                  }}
+                >
+                  Terms
+                </Text>
               </TouchableOpacity>
-              <Text className="text-white/40 text-sm">|</Text>
+              <Text
+                style={{
+                  color: "rgba(255, 255, 255, 0.4)",
+                  fontSize: 14,
+                }}
+              >
+                |
+              </Text>
               <TouchableOpacity>
-                <Text className="text-white/60 text-sm">Privacy policy</Text>
+                <Text
+                  style={{
+                    color: "rgba(255, 255, 255, 0.6)",
+                    fontSize: 14,
+                  }}
+                >
+                  Privacy policy
+                </Text>
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
