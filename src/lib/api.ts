@@ -51,7 +51,7 @@ export async function signUp(name: string, email: string, password: string) {
 }
 export async function signOut() { requireBackend(); await account.deleteSession('current'); }
 
-export async function listPosts(cursor?: string, filters: string[] = []): Promise<{ items: Post[]; cursor?: string }> {
+export async function listPosts(cursor?: string, filters: string[] = []): Promise<{ items: Post[]; cursor?: string; total: number }> {
   requireBackend();
   const result = await database.listDocuments(settings.database, settings.posts,
     [Query.orderDesc('$createdAt'), Query.limit(20), ...(cursor ? [Query.cursorAfter(cursor)] : []), ...filters]);
@@ -61,7 +61,7 @@ export async function listPosts(cursor?: string, filters: string[] = []): Promis
       [Query.equal('target_id', post.id), Query.equal('kind', 'like'), Query.limit(1)]);
     return { ...post, likes: post.likes + likes.total };
   }));
-  return { items, cursor: items.length === 20 ? items[items.length - 1].id : undefined };
+  return { items, cursor: items.length === 20 ? items[items.length - 1].id : undefined, total: result.total };
 }
 export async function getPost(id: string) {
   requireBackend();

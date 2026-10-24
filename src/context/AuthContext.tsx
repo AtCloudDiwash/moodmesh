@@ -4,8 +4,9 @@ import { demoUser } from '../data/demo';
 import { User } from '../types';
 import * as api from '../lib/api';
 import { safeError } from '../lib/validation';
+import { account } from '../lib/backend';
 
-type Auth = { user: User | null; loading: boolean; error: string | null; login: (email: string, password: string) => Promise<void>; logout: () => Promise<void>; retry: () => void };
+type Auth = { user: User | null; loading: boolean; error: string | null; login: (email: string, password: string) => Promise<void>; logout: () => Promise<void>; rename: (name: string) => Promise<void>; retry: () => void };
 const Context = createContext<Auth | undefined>(undefined);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(demoMode ? demoUser : null);
@@ -30,7 +31,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try { await api.signOut(); setUser(null); }
     catch (error) { throw new Error(safeError(error, 'Could not sign out. Please try again.')); }
   };
-  return <Context.Provider value={{ user, loading, error, login, logout, retry: () => setAttempt(value => value + 1) }}>{children}</Context.Provider>;
+  const rename = async (name: string) => {
+    if (name.trim().length < 2 || name.trim().length > 60) throw new Error('Invalid display name');
+    if (!demoMode) await account.updateName(name.trim());
+    setUser(previous => previous ? { ...previous, name: name.trim() } : previous);
+  };
+  return <Context.Provider value={{ user, loading, error, login, logout, rename, retry: () => setAttempt(value => value + 1) }}>{children}</Context.Provider>;
 }
 export function useAuth() {
   const context = useContext(Context);
