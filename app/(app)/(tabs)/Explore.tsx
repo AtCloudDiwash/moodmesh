@@ -1,194 +1,50 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Text,
-  ActivityIndicator,
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
-import MapView, { Marker, Callout } from "react-native-maps";
-import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/legacy/styles/theme";
-import mapStyle from "@/legacy/styles/mapThemeStyles.json";
-import { SafeAreaView } from "react-native-safe-area-context";
-import useAllLocations from "@/legacy/features/getAllLocation";
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useData } from '@/src/context/DataContext';
+import { useLocation } from '@/src/hooks/useLocation';
+import PlaceMap from '@/src/components/PlaceMap';
+import { DemoBanner, ErrorNotice, Header, Icon, IconButton, Message, MoodChip, MoodPicker, Photo, Screen } from '@/src/components/ui';
+import { colors } from '@/src/theme';
+import { openDirections } from '@/src/lib/directions';
 
 export default function Explore() {
-  const [location, setLocation] = useState({
-    latitude: 27.7172,
-    longitude: 85.324,
-  });
-  const [errMsg, setErrMsg] = useState("");
-  const [refreshKey, setRefreshKey] = useState(Date.now());
-  const mapRef = useRef<MapView | null>(null); // Ref to the MapView
-
-  const { postedLocations, postedMoods, allCreators, loading, error } =
-    useAllLocations(refreshKey);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setErrMsg("Permission denied, using fallback location.");
-          return;
-        }
-
-        let currentLocation = await Location.getCurrentPositionAsync();
-        const { latitude, longitude } = currentLocation.coords;
-
-        setLocation({ latitude, longitude });
-
-        // Animate map camera to user's location
-        mapRef.current?.animateCamera({
-          center: { latitude, longitude },
-          zoom: 15,
-          pitch: 45,
-          heading: 0,
-          altitude: 500,
-        });
-      } catch (error) {
-        setErrMsg("Error getting location, using fallback");
-      }
-    })();
-  }, []);
-
-  const handleRefresh = useCallback(() => {
-    setRefreshKey(Date.now());
-  }, []);
-
-  if (!location || (loading && postedLocations.length === 0)) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
-  const camera = {
-    center: {
-      latitude: location.latitude,
-      longitude: location.longitude,
-    },
-    zoom: 13,
-    pitch: 45,
-    heading: 0,
-    altitude: 5000,
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {errMsg ? <Text style={styles.errorText}>{errMsg}</Text> : null}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialCamera={camera}
-        showsUserLocation={true}
-        followsUserLocation={true}
-        customMapStyle={mapStyle}
-      >
-        {postedLocations.length > 0 &&
-          postedLocations.map((location, index) => (
-            <Marker
-              key={index}
-              coordinate={{
-                latitude: parseFloat(location[0]),
-                longitude: parseFloat(location[1]),
-              }}
-              pinColor={COLORS.secondary}
-                title={
-                  Platform.OS === "android"
-                    ? `Mood: ${
-                        postedMoods[index]?.join(", ") || "N/A"
-                      }`
-                    : undefined
-                }
-              >
-              {Platform.OS === "ios" && (
-                <Callout>
-                  <View style={styles.callout}>
-                    <Text style={styles.calloutText}>
-                      Mood: {postedMoods[index]?.join(", ") || "N/A"}
-                    </Text>
-                    <Text style={styles.calloutText}>
-                      Creator: {allCreators[index] || "Unknown"}
-                    </Text>
-                  </View>
-                </Callout>
-              )}
-            </Marker>
-          ))}
-      </MapView>
-      <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-        <Ionicons name="refresh" size={24} color="#fff" />
-      </TouchableOpacity>
-    </SafeAreaView>
-  );
+  const data = useData(), location = useLocation();
+  const [search, setSearch] = useState(''), [mood, setMood] = useState('All'), [selectedId, setSelectedId] = useState<string>();
+  const [error, setError] = useState<string | null>(null);
+  const places = useMemo(() => data.posts.filter(post => post.location && (mood === 'All' || post.moods.some(tag => tag.toLowerCase() === mood.toLowerCase())) && (post.title + ' ' + post.placeName + ' ' + post.moods.join(' ')).toLowerCase().includes(search.trim().toLowerCase())), [data.posts, mood, search]);
+  const selected = places.find(post => post.id === selectedId) ?? places[0];
+  const toggleSave = async () => { if (!selected) return; setError(null); try { await data.toggle('save', selected.id); } catch { setError('Could not save this place. Please retry.'); } };
+  return <Screen><DemoBanner /><Header subtitle="Discover places by how you feel." action={<IconButton icon="refresh-outline" label="Refresh places" disabled={data.loading} onPress={() => void data.refresh()} />} />
+    <View style={styles.search}><Icon name="search-outline" size={18} color={colors.muted} /><TextInput accessibilityLabel="Search places" placeholder="Cafés, parks, little escapes…" placeholderTextColor={colors.muted} value={search} onChangeText={setSearch} maxLength={120} style={styles.searchInput} />{search.length > 0 && <IconButton icon="close" label="Clear search" onPress={() => setSearch('')} />}</View>
+    <MoodPicker selected={[mood]} onSelect={setMood} includeAll />
+    <ErrorNotice message={data.error ?? error ?? location.error ?? data.libraryError} retry={() => { void data.refresh(); void data.reload(); setError(null); }} />
+    <View style={styles.map}>
+      <PlaceMap posts={places} selectedId={selected?.id} onSelect={setSelectedId} center={location.location} />
+      <View style={styles.mapTools}><IconButton icon="locate-outline" label="Find my location" disabled={location.busy} onPress={() => void location.locate()} /></View>
+      <View style={styles.counter}><View style={styles.liveDot} /><Text style={styles.countText}>{places.length} places to feel something</Text></View>
+      {data.loading && !data.posts.length && <View style={styles.empty}><Message title="Finding your next favorite…" loading /></View>}
+      {!data.loading && places.length === 0 && <View style={styles.empty}><Message title="A little quiet here" detail="Try another mood or search. Your next discovery might be the first one." action="Clear filters" onAction={() => { setSearch(''); setMood('All'); }} /></View>}
+    </View>
+    {selected && <View style={styles.preview}><View style={styles.previewTop}><Photo uri={selected.images[0]} label={selected.title} style={styles.thumbnail} /><View style={styles.previewInfo}><Text numberOfLines={1} style={styles.placeTitle}>{selected.title}</Text><Text style={styles.placeLocation} numberOfLines={1}>{selected.placeName}</Text><View style={styles.rating}><Icon name="star" color={colors.yellow} size={13} /><Text style={styles.ratingText}>{selected.rating.toFixed(1)}</Text><Text style={styles.author}>by {selected.author}</Text></View></View><IconButton icon={data.has('save', selected.id) ? 'bookmark' : 'bookmark-outline'} label={data.has('save', selected.id) ? 'Unsave place' : 'Save place'} active={data.has('save', selected.id)} disabled={data.libraryLoading || !!data.libraryError || data.pending.has('save:' + selected.id)} onPress={() => void toggleSave()} /></View>
+      <View style={styles.previewBottom}><View style={styles.chips}>{selected.moods.slice(0, 3).map(name => <MoodChip key={name} name={name} />)}</View><Pressable accessibilityRole="button" onPress={() => void openDirections(selected.location).catch(() => setError('Could not open directions. Please try again.'))} style={styles.directions}><Icon name="navigate" size={14} color={colors.blue} /><Text style={styles.directionText}>Go</Text></Pressable></View>
+      {places.length > 1 && <View style={styles.nextRow}><Text style={styles.nextText}>A place for every mood</Text><Pressable accessibilityRole="button" style={{ padding: 8 }} onPress={() => setSelectedId(places[(places.findIndex(post => post.id === selected.id) + 1) % places.length].id)}><Text style={styles.directionText}>Next place →</Text></Pressable></View>}
+    </View>}
+    {data.hasMore && <Pressable onPress={() => void data.loadMore()} accessibilityRole="button" disabled={data.loading} style={styles.more}><Text style={styles.directionText}>{data.loading ? 'Loading…' : 'Discover more places'}</Text></Pressable>}
+  </Screen>;
 }
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "red",
-    textAlign: "center",
-    marginVertical: 10,
-  },
-  refreshButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: COLORS.primary,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  retryButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  retryText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  callout: {
-    width: 150,
-    padding: 8,
-  },
-  calloutText: {
-    fontSize: 14,
-  },
+  search: { marginHorizontal: 20, backgroundColor: colors.field, borderRadius: 26, paddingHorizontal: 15, minHeight: 46, flexDirection: 'row', gap: 9, alignItems: 'center' },
+  searchInput: { flex: 1, fontSize: 12, color: colors.ink, paddingVertical: 12 }, map: { flex: 1, minHeight: 210, overflow: 'hidden' },
+  mapTools: { position: 'absolute', right: 16, top: 18, backgroundColor: colors.white, borderRadius: 25, elevation: 2 },
+  counter: { position: 'absolute', top: 20, left: 16, backgroundColor: '#FFFFFFED', borderRadius: 20, padding: 9, flexDirection: 'row', gap: 6, alignItems: 'center' },
+  liveDot: { width: 6, height: 6, backgroundColor: colors.green, borderRadius: 4 }, countText: { fontSize: 10, color: colors.ink },
+  empty: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', backgroundColor: '#FAF9F6ED' },
+  preview: { marginHorizontal: 14, marginTop: -3, marginBottom: 10, backgroundColor: colors.white, padding: 12, borderRadius: 20, borderWidth: 1, borderColor: colors.line },
+  previewTop: { flexDirection: 'row', gap: 11, alignItems: 'center' }, thumbnail: { width: 72, height: 77, borderRadius: 13 }, previewInfo: { flex: 1, gap: 6 },
+  placeTitle: { fontWeight: '700', fontSize: 15, color: colors.ink }, placeLocation: { fontSize: 10, color: colors.muted },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 4 }, ratingText: { fontSize: 11, fontWeight: '600', color: colors.ink }, author: { fontSize: 9, color: colors.muted, flex: 1 },
+  previewBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 8 }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, flex: 1 },
+  directions: { backgroundColor: '#EAF0FF', borderRadius: 20, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 4 }, directionText: { color: colors.blue, fontSize: 11, fontWeight: '700' },
+  nextRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.line, marginTop: 10, paddingTop: 5 },
+  nextText: { color: colors.muted, fontSize: 10 }, more: { alignItems: 'center', padding: 10 },
 });
