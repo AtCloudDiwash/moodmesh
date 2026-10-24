@@ -57,3 +57,8 @@ logs/
 #android
 
 android/
+# Local configuration and generated native projects
+.env*
+!.env.example
+ios/
+android/

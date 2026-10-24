@@ -1,8 +1,8 @@
-import { Redirect, Slot } from "expo-router";
-import { useAuth } from "@/context/authContext";
-
-export default function AppLayout(){
-    const {session} = useAuth()
-
-    return (!session? <Redirect href = "/(auth)/Login"/>: <Slot/>)
+import { Redirect, Stack } from 'expo-router';
+import { useAuth } from '@/src/context/AuthContext';
+import { DataProvider } from '@/src/context/DataContext';
+export default function AppLayout() {
+  const { user } = useAuth();
+  if (!user) return <Redirect href="/(auth)/Login" />;
+  return <DataProvider key={user.id}><Stack screenOptions={{ headerShown: false }} /></DataProvider>;
 }

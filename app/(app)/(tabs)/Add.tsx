@@ -18,18 +18,18 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/app/styles/theme";
+import { COLORS } from "@/legacy/styles/theme";
 import { debounce } from "lodash";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/authContext";
 import MapView, { Marker } from "react-native-maps";
-import { uploadImages } from "../features/uploadImages";
+import { uploadImages } from "@/legacy/features/uploadImages";
 import { ID } from "appwrite";
 import { databases } from "@/lib/appwriteConfig";
-import NoticeModal from "@/app/components/NoticeModal";
-import SubmittingModal from "@/app/components/SubmittingModal";
+import NoticeModal from "@/legacy/components/NoticeModal";
+import SubmittingModal from "@/legacy/components/SubmittingModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@react-navigation/elements";
 

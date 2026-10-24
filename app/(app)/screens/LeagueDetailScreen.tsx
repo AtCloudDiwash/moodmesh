@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import useLeagueDetails from "../features/fetchLeagueDetail";
-import { COLORS } from "@/app/styles/theme";
+import useLeagueDetails from "@/legacy/features/fetchLeagueDetail";
+import { COLORS } from "@/legacy/styles/theme";
 
 const LeagueDetailScreen: React.FC = () => {
   const { league_id } = useLocalSearchParams();

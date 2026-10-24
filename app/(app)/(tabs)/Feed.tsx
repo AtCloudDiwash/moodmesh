@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Stack } from "expo-router";
-import PostCard from "@/app/components/PostCard";
-import { COLORS } from "../../styles/theme";
+import PostCard from "@/legacy/components/PostCard";
+import { COLORS } from "@/legacy/styles/theme";
 import { useState, useEffect } from "react";
-import useUserPostIds from "../features/getUserPostId";
+import useUserPostIds from "@/legacy/features/getUserPostId";
 import { useCallback } from "react";
 
 export default function FeedScreen() {

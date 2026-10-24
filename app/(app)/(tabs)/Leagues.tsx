@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import LeagueCard from "@/app/components/LeagueCard";
-import useLeaguesInformation from "../features/fetchLeaguesDetails";
-import { COLORS } from "@/app/styles/theme";
+import LeagueCard from "@/legacy/components/LeagueCard";
+import useLeaguesInformation from "@/legacy/features/fetchLeaguesDetails";
+import { COLORS } from "@/legacy/styles/theme";
 
 const Leagues: React.FC = () => {
   const [page, setPage] = useState(1);

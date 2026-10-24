@@ -10,10 +10,10 @@ import {
 import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/app/styles/theme";
-import mapStyle from "@/app/styles/mapThemeStyles.json";
+import { COLORS } from "@/legacy/styles/theme";
+import mapStyle from "@/legacy/styles/mapThemeStyles.json";
 import { SafeAreaView } from "react-native-safe-area-context";
-import useAllLocations from "../features/getAllLocation";
+import useAllLocations from "@/legacy/features/getAllLocation";
 
 export default function Explore() {
   const [location, setLocation] = useState({

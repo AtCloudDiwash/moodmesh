@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { COLORS } from "@/app/styles/theme";
+import { COLORS } from "@/legacy/styles/theme";
 
 interface LeagueCardProps {
   title: string;

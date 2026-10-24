@@ -10,10 +10,10 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { COLORS } from "@/app/styles/theme";
+import { COLORS } from "@/legacy/styles/theme";
 import CustomCarousel from "./CustomCarousel";
-import useUserPost from "../(app)/features/fetchUserPost";
-import useLikeInteraction from "../(app)/features/setInteraction";
+import useUserPost from "@/legacy/features/fetchUserPost";
+import useLikeInteraction from "@/legacy/features/setInteraction";
 import { useAuth } from "@/context/authContext";
 
 const PostCard = ({ postData, refreshKey }) => {
