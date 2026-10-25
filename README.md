@@ -1,50 +1,46 @@
-# MoodMesh — Map Your Mood
+# MoodMesh
 
-**MoodMesh** is a mood-powered, map-based social discovery platform.  
-We help people share and explore places through *how they feel*, not just what they rate.  
-Think emotional Google Maps meets Pinterest, wrapped in vibes.
+**Find places by how they make you feel.**
 
-## 🚀 Live Preview
+Most maps help you find a place. MoodMesh helps you find the right feeling. Explore a map of local discoveries, browse places tagged with moods like Cozy or Inspired, and share the moments that made a place worth remembering.
 
-> Coming soon...  
-> Stay tuned for our public beta!
+## See MoodMesh
 
+| Explore the map                                                     | Share a place                                                           |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ![MoodMesh map with mood filters and a place preview](images/1.png) | ![Add a place with photos, moods, a rating, and location](images/4.png) |
 
-## 🛠️ Features
+| Take on a local challenge                                          | Keep track of your discoveries                                        |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| ![MoodMesh challenge with a place goal and progress](images/3.png) | ![MoodMesh profile with places, milestones, and points](images/2.png) |
 
-- 📍 **Mood-based Map** – Explore locations tagged with emotions, not just reviews  
-- 🧾 **Post Creation** – Add photos, ratings, moods, and geotags  
-- 📚 **Collections** – Curate and share themed place lists  
-- 🔄 **Feed Filtering** – Filter by mood, vibe, or venue type  
-- 🏆 **Leagues** – Compete in time-based creative challenges  
-- 🎯 **Creator Points & Milestones** – Earn rewards, badges, and unlock perks
+## How it works
 
+1. **Explore** the map and filter places by the mood you are looking for.
+2. **Share** a place with photos, a rating, its location, and up to three moods.
+3. **Save** places you want to come back to, and browse discoveries shared by others.
+4. **Join a challenge** to find places around a theme and track your progress.
 
-## 🧱 Tech Stack
+## Run the app
 
-- **Frontend**: React Native, Expo, TypeScript  
-- **Routing**: `expo-router`  
-- **Backend**: Node.js, Appwrite as BaaS 
-- **Database**: Appwrite Database  
-- **API**: RESTful architecture  
-- **Authentication**: Appwrite auth 
-- **Blockchain (planned)**: Solana spl tokens  
+You need Node.js 22.13 or newer.
 
+```sh
+npm install
+cp .env.example .env
+npm start
+```
 
-# Inspiration
+The example environment file enables preview mode, which uses sample places and resets changes when the app reloads. To connect your own Appwrite project, set the Appwrite endpoint, project, database, collection, bucket, and function IDs in `.env`. Keep server API keys out of the app's environment.
 
-Submitted for the **Solana Breakpoint Hackathon 2025**, MoodMesh was born out of a desire to make maps *feel human again*.
+To build and run the native app:
 
-## 🤝 Contributing
+```sh
+npx expo run:ios
+# or
+npx expo run:android
+```
 
-Pull requests are welcome. Feel free to fork this project and submit your ideas.
+## Built with
 
-## 🛡️ License
-
-MIT © 2025 MoodMesh Team
-
-## 📬 Contact
-
-Twitter: [@moodmesh_](https://twitter.com/moodmesh_)  
-Instagram: [@moodmesh_](https://instagram.com/moodmesh_)  
-Email: moodmesh.25@gmail.com
+Expo SDK 58, React Native, TypeScript, Expo Router, and Appwrite.
