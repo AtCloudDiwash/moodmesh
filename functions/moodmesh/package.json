@@ -1,0 +1,13 @@
+{
+  "name": "moodmesh-write-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/main.mjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

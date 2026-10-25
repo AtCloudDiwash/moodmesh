@@ -1,18 +1,41 @@
 export type Coordinates = { latitude: number; longitude: number };
 export type User = { id: string; name: string; email: string };
 export type Post = {
-  id: string; userId: string; author: string; title: string; description: string;
-  moods: string[]; rating: number; images: string[]; location: Coordinates | null;
-  placeName: string; createdAt: string; likes: number; leagueId?: string;
+  id: string;
+  userId: string;
+  author: string;
+  title: string;
+  description: string;
+  moods: string[];
+  rating: number;
+  images: string[];
+  location: Coordinates | null;
+  placeName: string;
+  createdAt: string;
+  likes: number;
+  leagueId?: string;
 };
 export type League = {
-  id: string; title: string; description: string; author: string; image: string;
-  startsAt: string; endsAt: string; mood: string; goal: number;
+  id: string;
+  title: string;
+  description: string;
+  author: string;
+  image: string;
+  startsAt: string;
+  endsAt: string;
+  mood: string;
+  goal: number;
 };
 export type ActivityKind = 'like' | 'save' | 'join';
 export type Activity = { id: string; targetId: string; kind: ActivityKind };
 export type Upload = { uri: string; name: string; type: string; size: number };
 export type PostDraft = {
-  title: string; description: string; moods: string[]; rating: number;
-  placeName: string; location: Coordinates | null; images: Upload[]; leagueId?: string;
+  title: string;
+  description: string;
+  moods: string[];
+  rating: number;
+  placeName: string;
+  location: Coordinates | null;
+  images: Upload[];
+  leagueId?: string;
 };

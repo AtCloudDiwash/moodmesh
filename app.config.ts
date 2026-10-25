@@ -4,7 +4,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const hasMapsKey = Boolean(mapsKey && !mapsKey.startsWith('replace_'));
   return {
     ...config,
-    name: config.name ?? 'MoodMesh', slug: config.slug ?? 'MoodMesh',
+    name: config.name ?? 'MoodMesh',
+    slug: config.slug ?? 'MoodMesh',
     android: { ...config.android, config: hasMapsKey ? { googleMaps: { apiKey: mapsKey } } : {} },
     extra: { ...config.extra, androidMapsConfigured: hasMapsKey },
   };

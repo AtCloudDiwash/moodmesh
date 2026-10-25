@@ -7,7 +7,6 @@
     "icon": "./assets/images/logo.png",
     "scheme": "moodmesh",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.diwashkuskusmiya.MoodMesh",
@@ -20,7 +19,6 @@
         "foregroundImage": "./assets/images/moodmesh-icon.png",
         "backgroundColor": "#3C64FE"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
@@ -56,7 +54,10 @@
           "cameraPermission": "Take a photo to share a place on MoodMesh.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

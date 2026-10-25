@@ -1,7 +1,15 @@
 export const colors = {
-  blue: '#1464FF', ink: '#142039', muted: '#697386', paper: '#FAF9F6',
-  white: '#FFFFFF', line: '#EAE9E4', field: '#F1F0ED', red: '#D94361',
-  yellow: '#ECA827', green: '#34745A', lavender: '#EFE5FF',
+  blue: '#1464FF',
+  ink: '#142039',
+  muted: '#697386',
+  paper: '#FAF9F6',
+  white: '#FFFFFF',
+  line: '#EAE9E4',
+  field: '#F1F0ED',
+  red: '#D94361',
+  yellow: '#ECA827',
+  green: '#34745A',
+  lavender: '#EFE5FF',
 };
 
 export const moods = [
@@ -14,5 +22,5 @@ export const moods = [
 ] as const;
 
 export function moodStyle(name: string) {
-  return moods.find(mood => mood.name.toLowerCase() === name.toLowerCase()) ?? moods[1];
+  return moods.find((mood) => mood.name.toLowerCase() === name.toLowerCase()) ?? moods[1];
 }
